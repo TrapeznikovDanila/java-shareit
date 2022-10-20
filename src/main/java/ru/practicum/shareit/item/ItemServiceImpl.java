@@ -15,14 +15,14 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto saveNewItem(long userId, ItemDto itemDto) {
-        return ItemMapper.makeItemDto(itemRepository.
-                saveNewItem(userId, ItemMapper.makeItem(itemDto)));
+        return ItemMapper.makeItemDto(itemRepository
+                .saveNewItem(userId, ItemMapper.makeItem(itemDto)));
     }
 
     @Override
     public ItemDto updateItem(long userId, long itemId, ItemDto itemDto) {
-        return ItemMapper.makeItemDto(itemRepository.
-                updateItem(userId, itemId, ItemMapper.makeItem(itemDto)));
+        return ItemMapper.makeItemDto(itemRepository
+                .updateItem(userId, itemId, ItemMapper.makeItem(itemDto)));
     }
 
     @Override
