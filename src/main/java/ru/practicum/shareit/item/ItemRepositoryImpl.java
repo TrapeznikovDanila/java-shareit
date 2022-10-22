@@ -22,7 +22,7 @@ public class ItemRepositoryImpl implements ItemRepository {
 
     private final UserRepository userRepository;
 
-    private Long id = Long.valueOf(0);
+    private Long id = 0L;
 
     @Override
     public Item saveNewItem(long userId, Item item) {

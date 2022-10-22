@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 public class UserRepositoryImpl implements UserRepository {
 
     private HashMap<Long, User> users = new HashMap<>();
-    private Long id = Long.valueOf(0);
+    private Long id = 0L;
 
     @Override
     public List<User> getAllUsers() {
