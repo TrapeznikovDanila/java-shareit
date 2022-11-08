@@ -17,9 +17,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             nativeQuery = true)
     List<Booking> findBookingsByBookerIdJoinItem(long bookerId);
 
-    List<Booking> findByItem_IdAndEndIsBeforeOrderByEndDesc(long ItemId, LocalDateTime end);
+    List<Booking> findByItem_IdAndEndIsBeforeOrderByEndDesc(long itemId, LocalDateTime end);
 
-    List<Booking> findByItem_IdAndStartIsAfterOrderByStartDesc(long ItemId, LocalDateTime start);
+    List<Booking> findByItem_IdAndStartIsAfterOrderByStartDesc(long itemId, LocalDateTime start);
 
     List<Booking> findBookingsByBookerId(long bookerId);
 

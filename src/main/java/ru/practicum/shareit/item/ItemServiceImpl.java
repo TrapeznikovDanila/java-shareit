@@ -89,8 +89,7 @@ public class ItemServiceImpl implements ItemService {
         if (itemOptional.isPresent()) {
             Item item = itemOptional.get();
             if (item.getUserId() == userId) {
-                ItemDto itemForOwnerDto = setLastAndNextBooking(ItemMapper.makeItemDto(item)
-                        , item.getId());
+                ItemDto itemForOwnerDto = setLastAndNextBooking(ItemMapper.makeItemDto(item), item.getId());
                 itemForOwnerDto.setComments(getComments(itemId));
                 return itemForOwnerDto;
             } else {
@@ -109,8 +108,7 @@ public class ItemServiceImpl implements ItemService {
         List<Item> items = itemRepository.findItemByUserId(userId);
         List<ItemDto> itemsForOwnerDto = new ArrayList<>();
         for (Item item : items) {
-            ItemDto itemDto = setLastAndNextBooking(ItemMapper.makeItemDto(item)
-                    , item.getId());
+            ItemDto itemDto = setLastAndNextBooking(ItemMapper.makeItemDto(item), item.getId());
             itemDto.setComments(commentRepository.findCommentsByItemId(item.getId())
                     .stream()
                     .map(CommentsMapper::makeCommentDto)
