@@ -9,7 +9,6 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserRepositoryOld;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,8 +16,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Repository
 public class ItemRepositoryImpl implements ItemRepositoryOld {
-
-    private HashMap<Long, Item> items = new HashMap<>();
 
     private final UserRepositoryOld userRepository;
 

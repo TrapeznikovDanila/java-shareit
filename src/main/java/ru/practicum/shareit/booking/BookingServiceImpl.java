@@ -43,8 +43,7 @@ public class BookingServiceImpl implements BookingService {
             Booking booking = bookingRepository.save(BookingMapper.makeBooking(bookingRequestDto));
             booking.setItem(itemService.getItemById(bookingRequestDto.getItemId()));
             booking.setBooker(UserMapper.makeUser(userService.getUserById(bookingRequestDto.getBookerId())));
-            BookingResponseDto bookingResponseDto = BookingMapper.makeBookingResponseDto(booking);
-            return bookingResponseDto;
+            return BookingMapper.makeBookingResponseDto(booking);
         } else {
             log.error("This item isn't available");
             throw new ValidationException("This item isn't available");
@@ -59,15 +58,13 @@ public class BookingServiceImpl implements BookingService {
         booking.setItem(itemService.getItemById(booking.getItem().getId()));
         booking.setBooker(UserMapper.makeUser(userService.getUserById(booking.getBooker().getId())));
         itemService.checkOwner(ownerId, booking.getItem().getId());
-        if ((approved == true) && (booking.getStatus().equals(BookingStatus.APPROVED))) {
+        if (approved && booking.getStatus().equals(BookingStatus.APPROVED)) {
             throw new ValidationException("Approved error");
         }
-        if (approved != null) {
-            if (approved == true) {
-                booking.setStatus(BookingStatus.APPROVED);
-            } else {
-                booking.setStatus(BookingStatus.REJECTED);
-            }
+        if (approved == true) {
+            booking.setStatus(BookingStatus.APPROVED);
+        } else {
+            booking.setStatus(BookingStatus.REJECTED);
         }
         return BookingMapper.makeBookingResponseDto(bookingRepository.save(booking));
     }

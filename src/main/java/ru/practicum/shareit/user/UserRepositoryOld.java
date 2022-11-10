@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 
 public interface UserRepositoryOld {
+
+    HashMap<Long, User> users = new HashMap<>();
     List<User> getAllUsers();
 
     User getUserById(Long userId);

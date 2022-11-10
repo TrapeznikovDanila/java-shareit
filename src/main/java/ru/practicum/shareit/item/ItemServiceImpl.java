@@ -47,15 +47,15 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto updateItem(long userId, long itemId, ItemDto itemDto) {
         checkOwner(userId, itemId);
-        ItemDto itemDto1 = getItemDtoById(itemId);
+        ItemDto itemDtoFromDB = getItemDtoById(itemId);
         if (itemDto.getName() == null) {
-            itemDto.setName(itemDto1.getName());
+            itemDto.setName(itemDtoFromDB.getName());
         }
         if (itemDto.getDescription() == null) {
-            itemDto.setDescription(itemDto1.getDescription());
+            itemDto.setDescription(itemDtoFromDB.getDescription());
         }
         if (itemDto.getAvailable() == null) {
-            itemDto.setAvailable(itemDto1.getAvailable());
+            itemDto.setAvailable(itemDtoFromDB.getAvailable());
         }
         itemDto.setId(itemId);
         Item item = ItemMapper.makeItem(itemDto);
@@ -190,13 +190,13 @@ public class ItemServiceImpl implements ItemService {
     public CommentsDto saveNewComment(long userId, long itemId, CommentsDto commentDto) {
         checkUserId(userId);
         commentsValidation(commentDto);
-        List<Booking> bookings1 = bookingRepository.findBookingsByBookerId(userId)
+        List<Booking> bookingsByUserId = bookingRepository.findBookingsByBookerId(userId)
                 .stream()
                 .filter(b -> b.getItem().getId() == itemId)
                 .filter(b -> b.getStatus() == BookingStatus.APPROVED)
                 .filter(b -> b.getEnd().isBefore(LocalDateTime.now()))
                 .collect(Collectors.toList());
-        if (bookings1.size() > 0) {
+        if (bookingsByUserId.size() > 0) {
             commentDto.setItemId(itemId);
             commentDto.setCreated(LocalDateTime.now());
             commentDto.setAuthorName(userRepository.findById(userId).get().getName());
