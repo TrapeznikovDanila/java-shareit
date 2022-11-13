@@ -11,9 +11,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
-public class UserRepositoryImpl implements UserRepository {
-
-    private HashMap<Long, User> users = new HashMap<>();
+public class UserRepositoryImpl implements UserRepositoryOld {
     private Long id = 0L;
 
     @Override
