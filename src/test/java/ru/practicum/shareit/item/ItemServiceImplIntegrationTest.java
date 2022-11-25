@@ -151,6 +151,50 @@ public class ItemServiceImplIntegrationTest {
     }
 
     @Test
+    void updateWrongItemTest() {
+        UserDto userDtoNotSaved = new UserDto();
+        userDtoNotSaved.setName("Name");
+        userDtoNotSaved.setEmail("e@mail.ru");
+        UserDto userDtoSaved = userService.saveNewUser(userDtoNotSaved);
+        ItemDto itemDto = new ItemDto();
+        itemDto.setName("Name");
+        itemDto.setDescription("Description");
+        itemDto.setAvailable(true);
+        ItemDto itemDtoSaved = service.saveNewItem(userDtoSaved.getId(), itemDto);
+        itemDto.setName("NewName");
+        itemDto.setDescription("NewDescription");
+        itemDto.setAvailable(false);
+
+        try {
+            service.updateItem(userDtoSaved.getId(), 15, itemDto);
+        } catch (NotFoundException e) {
+            assertThat(e.getMessage(), equalTo("Unknown item id"));
+        }
+    }
+    @Test
+    void updateItemByNotOwnerTest() {
+        UserDto userDtoNotSaved = new UserDto();
+        userDtoNotSaved.setName("Name");
+        userDtoNotSaved.setEmail("e@mail.ru");
+        UserDto userDtoSaved = userService.saveNewUser(userDtoNotSaved);
+        ItemDto itemDto = new ItemDto();
+        itemDto.setName("Name");
+        itemDto.setDescription("Description");
+        itemDto.setAvailable(true);
+        ItemDto itemDtoSaved = service.saveNewItem(userDtoSaved.getId(), itemDto);
+        itemDto.setName("NewName");
+        itemDto.setDescription("NewDescription");
+        itemDto.setAvailable(false);
+
+        try {
+            service.updateItem(15, itemDtoSaved.getId(), itemDto);
+        } catch (NotFoundException e) {
+            assertThat(e.getMessage(), equalTo("This item not found"));
+        }
+    }
+
+
+    @Test
     void getItemByIdForOwnerTest() {
         UserDto userDtoNotSaved = new UserDto();
         userDtoNotSaved.setName("Name");
