@@ -286,23 +286,23 @@ public class BookingServiceImplIntegrationTest {
 
     @Test
     void getBookingByIdByBookerTest() {
-        BookingRequestDto bookingRequestDto = new BookingRequestDto();
-        bookingRequestDto.setItemId(itemFromService.getId());
-        bookingRequestDto.setStart(LocalDateTime.now().plusNanos(4000000));
-        bookingRequestDto.setEnd(LocalDateTime.now().plusNanos(8000000));
-        BookingResponseDto bookingResponseDto = service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
-        BookingResponseDto bookingResponseDtoGettingById = service.getBookingById(userDtoSaved2.getId(),
-                bookingResponseDto.getId());
+        Booking newBooking = new Booking();
+        newBooking.setItem(ItemMapper.makeItem(itemFromService));
+        newBooking.setStart(LocalDateTime.now().minusSeconds(10));
+        newBooking.setEnd(LocalDateTime.now().minusSeconds(5));
+        newBooking.setBooker(UserMapper.makeUser(userDtoSaved2));
+        newBooking.setStatus(BookingStatus.APPROVED);
+        Booking bookingFromRepository = repository.save(newBooking);
 
         TypedQuery<Booking> query = em.createQuery("SELECT b from Booking b where b.id = :id",
                 Booking.class);
         Booking booking = query
-                .setParameter("id", bookingResponseDtoGettingById.getId())
+                .setParameter("id", bookingFromRepository.getId())
                 .getSingleResult();
 
         assertThat(booking.getId(), notNullValue());
-        assertThat(booking.getBooker().getId(), equalTo(bookingResponseDtoGettingById.getBooker().getId()));
-        assertThat(booking.getItem().getId(), equalTo(bookingResponseDtoGettingById.getItem().getId()));
+        assertThat(booking.getBooker().getId(), equalTo(newBooking.getBooker().getId()));
+        assertThat(booking.getItem().getId(), equalTo(newBooking.getItem().getId()));
     }
 
 
