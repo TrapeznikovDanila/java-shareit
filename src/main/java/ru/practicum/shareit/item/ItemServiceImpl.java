@@ -2,6 +2,8 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingMapper;
@@ -11,6 +13,7 @@ import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.CommentsDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemForRequestDto;
 import ru.practicum.shareit.item.model.Comments;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserRepository;
@@ -119,6 +122,22 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public List<ItemDto> getItemByUserId(long userId, int from, int size) {
+        pageParametersValidation(from, size);
+        Page<Item> items = itemRepository.findItemByUserId(userId, PageRequest.of((from / size), size));
+        List<ItemDto> itemsForOwnerDto = new ArrayList<>();
+        for (Item item : items) {
+            ItemDto itemDto = setLastAndNextBooking(ItemMapper.makeItemDto(item), item.getId());
+            itemDto.setComments(commentRepository.findCommentsByItemId(item.getId())
+                    .stream()
+                    .map(CommentsMapper::makeCommentDto)
+                    .collect(Collectors.toList()));
+            itemsForOwnerDto.add(itemDto);
+        }
+        return itemsForOwnerDto;
+    }
+
+    @Override
     public List<ItemDto> search(String text) {
         Set<Item> items = Stream.concat(itemRepository
                                 .findByNameContainingIgnoreCase(text)
@@ -126,6 +145,25 @@ public class ItemServiceImpl implements ItemService {
                         itemRepository
                                 .findByDescriptionContainingIgnoreCase(text)
                                 .stream())
+                .filter(item -> item.getAvailable() == true)
+                .collect(Collectors.toSet());
+
+        return items.stream().map(ItemMapper::makeItemDto)
+                .sorted((i1, i2) -> (int) (i1.getId() - i2.getId()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ItemDto> search(String text, int from, int size) {
+        pageParametersValidation(from, size);
+        Set<Item> items = Stream.concat(itemRepository
+                                .findByNameContainingIgnoreCase(text)
+                                .stream(),
+                        itemRepository
+                                .findByDescriptionContainingIgnoreCase(text)
+                                .stream())
+                .skip(from)
+                .limit(size)
                 .filter(item -> item.getAvailable() == true)
                 .collect(Collectors.toSet());
 
@@ -208,6 +246,14 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
+    @Override
+    public List<ItemForRequestDto> getItemsByRequestId(long requestId) {
+        return itemRepository.getItemByRequestId(requestId)
+                .stream()
+                .map(ItemMapper::makeItemForRequestDto)
+                .collect(Collectors.toList());
+    }
+
     private void commentsValidation(CommentsDto commentDto) {
         if ((commentDto.getText() == null) || commentDto.getText().isBlank()) {
             throw new ValidationException("Comment text is empty");
@@ -219,5 +265,13 @@ public class ItemServiceImpl implements ItemService {
                 .stream()
                 .map(CommentsMapper::makeCommentDto)
                 .collect(Collectors.toList());
+    }
+
+    private void pageParametersValidation(int from, int size) {
+        if (from < 0) {
+            throw new ValidationException("The from parameter can't be negative number");
+        } else if (size <= 0) {
+            throw new ValidationException("The size parameter must be positive number");
+        }
     }
 }

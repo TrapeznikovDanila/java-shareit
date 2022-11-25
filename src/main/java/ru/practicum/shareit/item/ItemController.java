@@ -40,16 +40,26 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDto> getItemsByUserId(@RequestHeader("X-Sharer-User-Id") long userId) {
-        return itemService.getItemByUserId(userId);
+    public List<ItemDto> getItemsByUserId(@RequestHeader("X-Sharer-User-Id") long userId,
+                                          @RequestParam(required = false) Integer from,
+                                          @RequestParam(required = false) Integer size) {
+        if ((from == null) || (size == null)) {
+            return itemService.getItemByUserId(userId);
+        }
+        return itemService.getItemByUserId(userId, from, size);
     }
 
     @GetMapping("/search")
-    public List<ItemDto> search(@RequestParam(required = false) String text) {
+    public List<ItemDto> search(@RequestParam(required = false) String text,
+                                @RequestParam(required = false) Integer from,
+                                @RequestParam(required = false) Integer size) {
         if ((text == null) || text.isBlank()) {
             return Collections.emptyList();
         }
-        return itemService.search(text);
+        if ((from == null) || (size == null)) {
+            return itemService.search(text);
+        }
+        return itemService.search(text, from, size);
     }
 
     @PostMapping("/{itemId}/comment")

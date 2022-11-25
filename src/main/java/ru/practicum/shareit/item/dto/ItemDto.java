@@ -25,4 +25,5 @@ public class ItemDto {
     private int countOfBooking;
     private BookingForItemDto lastBooking;
     private BookingForItemDto nextBooking;
+    private long requestId;
 }

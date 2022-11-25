@@ -24,6 +24,7 @@ public class Item {
     private String description;
     @NotNull
     private long userId;
+    private long requestId;
     @NotNull(message = "Field available can't be null")
     private Boolean available;
     @Transient

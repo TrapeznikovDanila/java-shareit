@@ -2,6 +2,8 @@ package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
@@ -100,6 +102,26 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    public List<BookingResponseDto> getBookingsByBookerId(long bookerId, BookingState state, int from, int size) {
+        itemService.checkUserId(bookerId);
+        pageParametersValidation(from, size);
+        int page = calculatePage(from, size);
+        if (state == BookingState.CURRENT) {
+            return getCurrentBookingsByBookerId(bookerId, page, size);
+        } else if (state == BookingState.FUTURE) {
+            return getFutureBookingsByBookerId(bookerId, page, size);
+        } else if (state == BookingState.PAST) {
+            return getPastBookingsByBookerId(bookerId, page, size);
+        } else if (state == BookingState.REJECTED) {
+            return getRejectedBookingsByBookerId(bookerId, page, size);
+        } else if (state == BookingState.WAITING) {
+            return getWaitingBookingsByBookerId(bookerId, page, size);
+        } else {
+            return getAllBookingsByBookerId(bookerId, page, size);
+        }
+    }
+
+    @Override
     public List<BookingResponseDto> getBookingsForAllItemsByOwnerId(long userId, BookingState state) {
         itemService.checkUserId(userId);
         if (state == BookingState.CURRENT) {
@@ -117,7 +139,26 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
-    private Booking getBooking(long bookingId) {
+    @Override
+    public List<BookingResponseDto> getBookingsForAllItemsByOwnerId(long userId, BookingState state, int from, int size) {
+        itemService.checkUserId(userId);
+        pageParametersValidation(from, size);
+        if (state == BookingState.CURRENT) {
+            return getCurrentBookingsOfAllItemsByOwnerId(userId, from, size);
+        } else if (state == BookingState.FUTURE) {
+            return getFutureBookingsOfAllItemsByOwnerId(userId, from, size);
+        } else if (state == BookingState.PAST) {
+            return getPastBookingsOfAllItemsByOwnerId(userId, from, size);
+        } else if (state == BookingState.REJECTED) {
+            return getRejectedBookingsOfAllItemsByOwnerId(userId, from, size);
+        } else if (state == BookingState.WAITING) {
+            return getWaitingBookingsOfAllItemsByOwnerId(userId, from, size);
+        } else {
+            return getAllBookingsOfAllItemsByOwnerId(userId, from, size);
+        }
+    }
+
+    public Booking getBooking(long bookingId) {
         Optional<Booking> bookingOpt = bookingRepository.findById(bookingId);
         if (bookingOpt.isPresent()) {
             Booking booking = bookingOpt.get();
@@ -137,8 +178,28 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
+    private List<BookingResponseDto> getAllBookingsByBookerId(long bookerId, int page, int size) {
+        return bookingRepository.findByBookerId(bookerId, PageRequest.of(page, size,
+                        Sort.Direction.DESC, "start"))
+                .stream()
+                .map(BookingMapper::makeBookingResponseDto)
+                .sorted((b1, b2) -> b2.getStart().compareTo(b1.getStart()))
+                .collect(Collectors.toList());
+    }
+
     private List<BookingResponseDto> getCurrentBookingsByBookerId(long bookerId) {
         return bookingRepository.findByBookerId(bookerId)
+                .stream()
+                .filter(booking -> booking.getStart().isBefore(LocalDateTime.now()))
+                .filter(booking -> booking.getEnd().isAfter(LocalDateTime.now()))
+                .map(BookingMapper::makeBookingResponseDto)
+                .sorted((b1, b2) -> b2.getStart().compareTo(b1.getStart()))
+                .collect(Collectors.toList());
+    }
+
+    private List<BookingResponseDto> getCurrentBookingsByBookerId(long bookerId, int page, int size) {
+        return bookingRepository.findByBookerId(bookerId, PageRequest.of(page, size,
+                        Sort.Direction.DESC, "start"))
                 .stream()
                 .filter(booking -> booking.getStart().isBefore(LocalDateTime.now()))
                 .filter(booking -> booking.getEnd().isAfter(LocalDateTime.now()))
@@ -156,8 +217,28 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
+    private List<BookingResponseDto> getFutureBookingsByBookerId(long bookerId, int page, int size) {
+        return bookingRepository.findByBookerId(bookerId, PageRequest.of(page, size,
+                        Sort.Direction.DESC, "start"))
+                .stream()
+                .map(BookingMapper::makeBookingResponseDto)
+                .filter(booking -> booking.getStart().isAfter(LocalDateTime.now()))
+                .sorted((b1, b2) -> b2.getStart().compareTo(b1.getStart()))
+                .collect(Collectors.toList());
+    }
+
     private List<BookingResponseDto> getPastBookingsByBookerId(long bookerId) {
         return bookingRepository.findByBookerId(bookerId)
+                .stream()
+                .filter(booking -> booking.getEnd().isBefore(LocalDateTime.now()))
+                .map(BookingMapper::makeBookingResponseDto)
+                .sorted(Comparator.comparing(BookingResponseDto::getStart))
+                .collect(Collectors.toList());
+    }
+
+    private List<BookingResponseDto> getPastBookingsByBookerId(long bookerId, int page, int size) {
+        return bookingRepository.findByBookerId(bookerId, PageRequest.of(page, size,
+                        Sort.Direction.DESC, "start"))
                 .stream()
                 .filter(booking -> booking.getEnd().isBefore(LocalDateTime.now()))
                 .map(BookingMapper::makeBookingResponseDto)
@@ -174,8 +255,28 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
+    private List<BookingResponseDto> getRejectedBookingsByBookerId(long bookerId, int page, int size) {
+        return bookingRepository.findByBookerId(bookerId, PageRequest.of(page, size,
+                        Sort.Direction.DESC, "start"))
+                .stream()
+                .map(BookingMapper::makeBookingResponseDto)
+                .filter(booking -> booking.getStatus() == BookingStatus.REJECTED)
+                .sorted((b1, b2) -> b2.getStart().compareTo(b1.getStart()))
+                .collect(Collectors.toList());
+    }
+
     private List<BookingResponseDto> getWaitingBookingsByBookerId(long bookerId) {
         return bookingRepository.findByBookerId(bookerId)
+                .stream()
+                .map(BookingMapper::makeBookingResponseDto)
+                .filter(booking -> booking.getStatus() == BookingStatus.WAITING)
+                .sorted((b1, b2) -> b2.getStart().compareTo(b1.getStart()))
+                .collect(Collectors.toList());
+    }
+
+    private List<BookingResponseDto> getWaitingBookingsByBookerId(long bookerId, int page, int size) {
+        return bookingRepository.findByBookerId(bookerId, PageRequest.of(page, size,
+                        Sort.Direction.DESC, "start"))
                 .stream()
                 .map(BookingMapper::makeBookingResponseDto)
                 .filter(booking -> booking.getStatus() == BookingStatus.WAITING)
@@ -190,9 +291,29 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
+    private List<BookingResponseDto> getAllBookingsOfAllItemsByOwnerId(long userId, int from, int size) {
+        return bookingRepository.findBookingsByBookerIdJoinItem(userId)
+                .stream()
+                .skip(from)
+                .limit(size)
+                .map(BookingMapper::makeBookingResponseDto)
+                .collect(Collectors.toList());
+    }
+
     private List<BookingResponseDto> getCurrentBookingsOfAllItemsByOwnerId(long userId) {
         return bookingRepository.findBookingsByBookerIdJoinItem(userId)
                 .stream()
+                .filter(b -> b.getStart().isBefore(LocalDateTime.now()))
+                .filter(b -> b.getEnd().isAfter(LocalDateTime.now()))
+                .map(BookingMapper::makeBookingResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    private List<BookingResponseDto> getCurrentBookingsOfAllItemsByOwnerId(long userId, int from, int size) {
+        return bookingRepository.findBookingsByBookerIdJoinItem(userId)
+                .stream()
+                .skip(from)
+                .limit(size)
                 .filter(b -> b.getStart().isBefore(LocalDateTime.now()))
                 .filter(b -> b.getEnd().isAfter(LocalDateTime.now()))
                 .map(BookingMapper::makeBookingResponseDto)
@@ -207,9 +328,30 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
+    private List<BookingResponseDto> getFutureBookingsOfAllItemsByOwnerId(long userId, int from, int size) {
+        return bookingRepository.findBookingsByBookerIdJoinItem(userId)
+                .stream()
+                .skip(from)
+                .limit(size)
+                .map(BookingMapper::makeBookingResponseDto)
+                .filter(b -> b.getStart().isAfter(LocalDateTime.now()))
+                .collect(Collectors.toList());
+    }
+
     private List<BookingResponseDto> getPastBookingsOfAllItemsByOwnerId(long userId) {
         return bookingRepository.findBookingsByBookerIdJoinItem(userId)
                 .stream()
+                .filter(b -> b.getStatus() == BookingStatus.APPROVED)
+                .filter(b -> b.getEnd().isBefore(LocalDateTime.now()))
+                .map(BookingMapper::makeBookingResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    private List<BookingResponseDto> getPastBookingsOfAllItemsByOwnerId(long userId, int from, int size) {
+        return bookingRepository.findBookingsByBookerIdJoinItem(userId)
+                .stream()
+                .skip(from)
+                .limit(size)
                 .filter(b -> b.getStatus() == BookingStatus.APPROVED)
                 .filter(b -> b.getEnd().isBefore(LocalDateTime.now()))
                 .map(BookingMapper::makeBookingResponseDto)
@@ -224,9 +366,29 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
+    private List<BookingResponseDto> getRejectedBookingsOfAllItemsByOwnerId(long userId, int from, int size) {
+        return bookingRepository.findBookingsByBookerIdJoinItem(userId)
+                .stream()
+                .skip(from)
+                .limit(size)
+                .map(BookingMapper::makeBookingResponseDto)
+                .filter(b -> b.getStatus() == BookingStatus.REJECTED)
+                .collect(Collectors.toList());
+    }
+
     private List<BookingResponseDto> getWaitingBookingsOfAllItemsByOwnerId(long userId) {
         return bookingRepository.findBookingsByBookerIdJoinItem(userId)
                 .stream()
+                .map(BookingMapper::makeBookingResponseDto)
+                .filter(b -> b.getStatus() == BookingStatus.WAITING)
+                .collect(Collectors.toList());
+    }
+
+    private List<BookingResponseDto> getWaitingBookingsOfAllItemsByOwnerId(long userId, int from, int size) {
+        return bookingRepository.findBookingsByBookerIdJoinItem(userId)
+                .stream()
+                .skip(from)
+                .limit(size)
                 .map(BookingMapper::makeBookingResponseDto)
                 .filter(b -> b.getStatus() == BookingStatus.WAITING)
                 .collect(Collectors.toList());
@@ -261,5 +423,17 @@ public class BookingServiceImpl implements BookingService {
             log.error("The item id error");
             throw new ValidationException("The item id error");
         }
+    }
+
+    private void pageParametersValidation(int from, int size) {
+        if (from < 0) {
+            throw new ValidationException("The from parameter can't be negative number");
+        } else if (size <= 0) {
+            throw new ValidationException("The size parameter must be positive number");
+        }
+    }
+
+    private int calculatePage(int from, int size) {
+        return from / size;
     }
 }

@@ -46,19 +46,39 @@ public class BookingController {
 
     @GetMapping
     public List<BookingResponseDto> getBookingsByBookerId(@RequestHeader("X-Sharer-User-Id") long bookerId,
-                                                          @RequestParam(required = false) String state) {
+                                                          @RequestParam(required = false) String state,
+                                                          @RequestParam(required = false) Integer from,
+                                                          @RequestParam(required = false) Integer size) {
         if (state == null || state.equals("ALL")) {
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.ALL);
+            if ((from == null) || (size == null)) {
+                return bookingService.getBookingsByBookerId(bookerId, BookingState.ALL);
+            }
+            return bookingService.getBookingsByBookerId(bookerId, BookingState.ALL, from, size);
         } else if (state.equals("PAST")) {
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.PAST);
+            if ((from == null) || (size == null)) {
+                return bookingService.getBookingsByBookerId(bookerId, BookingState.PAST);
+            }
+            return bookingService.getBookingsByBookerId(bookerId, BookingState.PAST, from, size);
         } else if (state.equals("FUTURE")) {
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.FUTURE);
+            if ((from == null) || (size == null)) {
+                return bookingService.getBookingsByBookerId(bookerId, BookingState.FUTURE);
+            }
+            return bookingService.getBookingsByBookerId(bookerId, BookingState.FUTURE, from, size);
         } else if (state.equals("CURRENT")) {
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.CURRENT);
+            if ((from == null) || (size == null)) {
+                return bookingService.getBookingsByBookerId(bookerId, BookingState.CURRENT);
+            }
+            return bookingService.getBookingsByBookerId(bookerId, BookingState.CURRENT, from, size);
         } else if (state.equals("WAITING")) {
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.WAITING);
+            if ((from == null) || (size == null)) {
+                return bookingService.getBookingsByBookerId(bookerId, BookingState.WAITING);
+            }
+            return bookingService.getBookingsByBookerId(bookerId, BookingState.WAITING, from, size);
         } else if (state.equals("REJECTED")) {
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.REJECTED);
+            if ((from == null) || (size == null)) {
+                return bookingService.getBookingsByBookerId(bookerId, BookingState.REJECTED);
+            }
+            return bookingService.getBookingsByBookerId(bookerId, BookingState.REJECTED, from, size);
         } else {
             log.error("Unknown state: " + state);
             throw new ValidationException("Unknown state: " + state);
@@ -67,10 +87,15 @@ public class BookingController {
 
     @GetMapping("/owner")
     public List<BookingResponseDto> getBookingsForAllItemsByOwnerId(@RequestHeader("X-Sharer-User-Id") long userId,
-                                                                    @RequestParam(required = false) String state) {
+                                                                    @RequestParam(required = false) String state,
+                                                                    @RequestParam(required = false) Integer from,
+                                                                    @RequestParam(required = false) Integer size) {
         fillMap();
         if (bookingStates.containsKey(state)) {
-            return bookingService.getBookingsForAllItemsByOwnerId(userId, bookingStates.get(state));
+            if ((from == null) || (size == null)) {
+                return bookingService.getBookingsForAllItemsByOwnerId(userId, bookingStates.get(state));
+            }
+            return bookingService.getBookingsForAllItemsByOwnerId(userId, bookingStates.get(state), from, size);
         } else {
             log.error("Unknown state: " + state);
             throw new ValidationException("Unknown state: " + state);
