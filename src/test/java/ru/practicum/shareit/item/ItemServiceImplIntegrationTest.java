@@ -294,6 +294,34 @@ public class ItemServiceImplIntegrationTest {
     }
 
     @Test
+    void getItemByUserIdWithWrongPaginationParametersTest() {
+        UserDto userDtoNotSaved = new UserDto();
+        userDtoNotSaved.setName("Name");
+        userDtoNotSaved.setEmail("e@mail.ru");
+        UserDto userDtoSaved = userService.saveNewUser(userDtoNotSaved);
+        ItemDto itemDto = new ItemDto();
+        itemDto.setName("Name");
+        itemDto.setDescription("Description");
+        itemDto.setAvailable(true);
+        service.saveNewItem(userDtoSaved.getId(), itemDto);
+        itemDto.setName("Name2");
+        itemDto.setDescription("Description2");
+        service.saveNewItem(userDtoSaved.getId(), itemDto);
+
+        try {
+            service.getItemByUserId(userDtoSaved.getId(), -1, 1);
+        } catch (ValidationException e) {
+            assertThat(e.getMessage(), equalTo("The from parameter can't be negative number"));
+        }
+
+        try {
+            service.getItemByUserId(userDtoSaved.getId(), 0, 0);
+        } catch (ValidationException e) {
+            assertThat(e.getMessage(), equalTo("The size parameter must be positive number"));
+        }
+    }
+
+    @Test
     void searchItem() {
         UserDto userDtoNotSaved = new UserDto();
         userDtoNotSaved.setName("Name");
