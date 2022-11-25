@@ -235,44 +235,66 @@ public class BookingServiceImplIntegrationTest {
 
     @Test
     void bookingApprovedConformationTest() {
-        BookingRequestDto bookingRequestDto = new BookingRequestDto();
-        bookingRequestDto.setItemId(itemFromService.getId());
-        bookingRequestDto.setStart(LocalDateTime.now().plusNanos(4000000));
-        bookingRequestDto.setEnd(LocalDateTime.now().plusNanos(8000000));
-        BookingResponseDto bookingResponseDto = service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
-        service.bookingConfirmation(userDtoSaved1.getId(), bookingResponseDto.getId(), true);
+        Booking booking = new Booking();
+        booking.setItem(ItemMapper.makeItem(itemFromService));
+        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
+        booking.setStart(LocalDateTime.now().plusSeconds(10));
+        booking.setEnd(LocalDateTime.now().plusSeconds(15));
+        booking.setStatus(BookingStatus.WAITING);
+        Booking bookingFromRepository = repository.save(booking);
+        service.bookingConfirmation(userDtoSaved1.getId(), bookingFromRepository.getId(), true);
 
         TypedQuery<Booking> query = em.createQuery("select b from Booking b where b.item.id = :id",
                 Booking.class);
-        Booking booking = query
+        Booking bookingFromEm = query
                 .setParameter("id", itemFromService.getId())
                 .getSingleResult();
 
-        assertThat(booking.getId(), notNullValue());
-        assertThat(booking.getBooker().getId(), equalTo(userDtoSaved2.getId()));
-        assertThat(booking.getItem().getId(), equalTo(itemFromService.getId()));
-        assertThat(booking.getStatus(), equalTo(BookingStatus.APPROVED));
+        assertThat(bookingFromEm.getId(), notNullValue());
+        assertThat(bookingFromEm.getBooker().getId(), equalTo(userDtoSaved2.getId()));
+        assertThat(bookingFromEm.getItem().getId(), equalTo(itemFromService.getId()));
+        assertThat(bookingFromEm.getStatus(), equalTo(BookingStatus.APPROVED));
     }
 
     @Test
     void bookingRejectedConformationTest() {
-        BookingRequestDto bookingRequestDto = new BookingRequestDto();
-        bookingRequestDto.setItemId(itemFromService.getId());
-        bookingRequestDto.setStart(LocalDateTime.now().plusNanos(4000000));
-        bookingRequestDto.setEnd(LocalDateTime.now().plusNanos(8000000));
-        BookingResponseDto bookingResponseDto = service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
-        service.bookingConfirmation(userDtoSaved1.getId(), bookingResponseDto.getId(), false);
+        Booking booking = new Booking();
+        booking.setItem(ItemMapper.makeItem(itemFromService));
+        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
+        booking.setStart(LocalDateTime.now().plusSeconds(10));
+        booking.setEnd(LocalDateTime.now().plusSeconds(15));
+        booking.setStatus(BookingStatus.WAITING);
+        Booking bookingFromRepository = repository.save(booking);
+        service.bookingConfirmation(userDtoSaved1.getId(), bookingFromRepository.getId(), false);
 
         TypedQuery<Booking> query = em.createQuery("SELECT b from Booking b where b.item.id = :id",
                 Booking.class);
-        Booking booking = query
+        Booking bookingFromEm = query
                 .setParameter("id", itemFromService.getId())
                 .getSingleResult();
 
-        assertThat(booking.getId(), notNullValue());
-        assertThat(booking.getBooker().getId(), equalTo(userDtoSaved2.getId()));
-        assertThat(booking.getItem().getId(), equalTo(itemFromService.getId()));
-        assertThat(booking.getStatus(), equalTo(BookingStatus.REJECTED));
+        assertThat(bookingFromEm.getId(), notNullValue());
+        assertThat(bookingFromEm.getBooker().getId(), equalTo(userDtoSaved2.getId()));
+        assertThat(bookingFromEm.getItem().getId(), equalTo(itemFromService.getId()));
+        assertThat(bookingFromEm.getStatus(), equalTo(BookingStatus.REJECTED));
+    }
+
+    @Test
+    void bookingAlreadyApprovedConformationTest() {
+        Booking booking = new Booking();
+        booking.setItem(ItemMapper.makeItem(itemFromService));
+        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
+        booking.setStart(LocalDateTime.now().plusSeconds(10));
+        booking.setEnd(LocalDateTime.now().plusSeconds(15));
+        booking.setStatus(BookingStatus.WAITING);
+        Booking bookingFromRepository = repository.save(booking);
+        service.bookingConfirmation(userDtoSaved1.getId(), bookingFromRepository.getId(), true);
+
+        try {
+            service.bookingConfirmation(userDtoSaved1.getId(), bookingFromRepository.getId(), true);
+        } catch (ValidationException e) {
+            assertThat(e.getMessage(), equalTo("Approved error"));
+        }
     }
 
     @Test
