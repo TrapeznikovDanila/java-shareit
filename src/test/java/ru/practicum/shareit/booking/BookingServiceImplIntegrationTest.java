@@ -234,7 +234,7 @@ public class BookingServiceImplIntegrationTest {
     }
 
     @Test
-    void BookingApprovedConformationTest() {
+    void bookingApprovedConformationTest() {
         BookingRequestDto bookingRequestDto = new BookingRequestDto();
         bookingRequestDto.setItemId(itemFromService.getId());
         bookingRequestDto.setStart(LocalDateTime.now().plusNanos(4000000));
@@ -242,7 +242,7 @@ public class BookingServiceImplIntegrationTest {
         BookingResponseDto bookingResponseDto = service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
         service.bookingConfirmation(userDtoSaved1.getId(), bookingResponseDto.getId(), true);
 
-        TypedQuery<Booking> query = em.createQuery("SELECT b from Booking b where b.item.id = :id",
+        TypedQuery<Booking> query = em.createQuery("select b from Booking b where b.item.id = :id",
                 Booking.class);
         Booking booking = query
                 .setParameter("id", itemFromService.getId())
@@ -255,7 +255,7 @@ public class BookingServiceImplIntegrationTest {
     }
 
     @Test
-    void BookingRejectedConformationTest() {
+    void bookingRejectedConformationTest() {
         BookingRequestDto bookingRequestDto = new BookingRequestDto();
         bookingRequestDto.setItemId(itemFromService.getId());
         bookingRequestDto.setStart(LocalDateTime.now().plusNanos(4000000));
@@ -276,7 +276,7 @@ public class BookingServiceImplIntegrationTest {
     }
 
     @Test
-    void BookingAlreadyApprovedConformationTest() {
+    void bookingAlreadyApprovedConformationTest() {
         BookingRequestDto bookingRequestDto = new BookingRequestDto();
         bookingRequestDto.setItemId(itemFromService.getId());
         bookingRequestDto.setStart(LocalDateTime.now().plusNanos(4000000));
