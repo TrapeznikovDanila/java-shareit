@@ -171,8 +171,9 @@ public class ItemServiceImplIntegrationTest {
             assertThat(e.getMessage(), equalTo("Unknown item id"));
         }
     }
+
     @Test
-    void updateItemByNotOwnerTest() {
+    void updateItemByNotOwnerIdTest() {
         UserDto userDtoNotSaved = new UserDto();
         userDtoNotSaved.setName("Name");
         userDtoNotSaved.setEmail("e@mail.ru");
