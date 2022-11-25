@@ -220,6 +220,50 @@ public class ItemServiceImplIntegrationTest {
     }
 
     @Test
+    void getItemByIdForOwnerWithBookingsTest() {
+        UserDto userDtoNotSaved = new UserDto();
+        userDtoNotSaved.setName("Name1");
+        userDtoNotSaved.setEmail("e1@mail.ru");
+        UserDto userDtoSaved1 = userService.saveNewUser(userDtoNotSaved);
+        userDtoNotSaved.setName("Name2");
+        userDtoNotSaved.setEmail("e2@mail.ru");
+        UserDto userDtoSaved2 = userService.saveNewUser(userDtoNotSaved);
+        ItemDto itemDto = new ItemDto();
+        itemDto.setName("Name");
+        itemDto.setDescription("Description");
+        itemDto.setAvailable(true);
+        ItemDto itemDtoSaved = service.saveNewItem(userDtoSaved1.getId(), itemDto);
+
+        Booking booking1 = new Booking();
+        booking1.setBooker(UserMapper.makeUser(userDtoSaved2));
+        booking1.setItem(ItemMapper.makeItem(itemDtoSaved));
+        booking1.setStart(LocalDateTime.now().minusSeconds(100));
+        booking1.setEnd(LocalDateTime.now().minusSeconds(90));
+        booking1.setStatus(BookingStatus.APPROVED);
+        bookingRepository.save(booking1);
+        Booking booking2 = new Booking();
+        booking2.setBooker(UserMapper.makeUser(userDtoSaved2));
+        booking2.setItem(ItemMapper.makeItem(itemDtoSaved));
+        booking2.setStart(LocalDateTime.now().plusSeconds(100));
+        booking2.setEnd(LocalDateTime.now().plusSeconds(900));
+        booking2.setStatus(BookingStatus.APPROVED);
+        bookingRepository.save(booking2);
+
+
+        ItemDto itemFromService = service.getItemById(userDtoSaved1.getId(), itemDtoSaved.getId());
+
+        TypedQuery<Item> query = em.createQuery("SELECT i from Item i where i.id = :id",
+                Item.class);
+        Item item = query
+                .setParameter("id", itemDtoSaved.getId())
+                .getSingleResult();
+
+        assertThat(item.getId(), notNullValue());
+        assertThat(item.getName(), equalTo(itemFromService.getName()));
+        assertThat(item.getDescription(), equalTo(itemFromService.getDescription()));
+    }
+
+    @Test
     void getItemByIdForTest() {
         UserDto userDtoNotSaved1 = new UserDto();
         userDtoNotSaved1.setName("Name1");
