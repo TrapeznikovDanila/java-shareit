@@ -276,22 +276,6 @@ public class BookingServiceImplIntegrationTest {
     }
 
     @Test
-    void bookingAlreadyApprovedConformationTest() {
-        BookingRequestDto bookingRequestDto = new BookingRequestDto();
-        bookingRequestDto.setItemId(itemFromService.getId());
-        bookingRequestDto.setStart(LocalDateTime.now().plusNanos(4000000));
-        bookingRequestDto.setEnd(LocalDateTime.now().plusNanos(8000000));
-        BookingResponseDto bookingResponseDto = service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
-        service.bookingConfirmation(userDtoSaved1.getId(), bookingResponseDto.getId(), true);
-
-        try {
-            service.bookingConfirmation(userDtoSaved1.getId(), bookingResponseDto.getId(), true);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("Approved error"));
-        }
-    }
-
-    @Test
     void getBookingByWrongIdTest() {
         try {
             service.getBooking(100);
