@@ -5,8 +5,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import java.time.LocalDateTime;
-
 public interface ItemRequestsRepository extends JpaRepository<ItemRequest, Long> {
 
     Page<ItemRequest> getItemRequestByUserIdOrderByCreated(long userId, Pageable pageable);

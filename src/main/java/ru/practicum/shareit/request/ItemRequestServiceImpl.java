@@ -54,7 +54,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                 .stream()
                 .map(ItemRequestMapper::makeItemRequestDto)
                 .collect(Collectors.toList());
-        List<Item> items =  itemRepository.findAll();
+        List<Item> items = itemRepository.findAll();
         for (ItemRequestDto itemRequest : itemsRequests) {
             List<ItemForRequestDto> itemForRequestDtos = new ArrayList<>();
             for (Item item : items) {
@@ -76,7 +76,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
                 .stream()
                 .map(ItemRequestMapper::makeItemRequestDto)
                 .collect(Collectors.toList());
-        List<Item> items =  itemRepository.findAll();
+        List<Item> items = itemRepository.findAll();
         for (ItemRequestDto itemRequest : itemsRequests) {
             List<ItemForRequestDto> itemForRequestDtos = new ArrayList<>();
             for (Item item : items) {
