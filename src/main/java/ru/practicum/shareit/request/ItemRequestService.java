@@ -8,7 +8,7 @@ public interface ItemRequestService {
 
     ItemRequestDto saveNewItemRequest(long userId, ItemRequestDto itemRequestDto);
 
-    List<ItemRequestDto> getItemRequestByAuthor(long userId);
+    List<ItemRequestDto> getItemRequestByAuthor(long userId, Integer from, Integer size);
 
     List<ItemRequestDto> getItemRequests(long userId, int from, int size);
 

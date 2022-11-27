@@ -18,13 +18,9 @@ public interface ItemService {
 
     Item getItemById(long itemId);
 
-    List<ItemDto> getItemByUserId(long userId);
+    List<ItemDto> getItemByUserId(long userId, Integer from, Integer size);
 
-    List<ItemDto> getItemByUserId(long userId, int from, int size);
-
-    List<ItemDto> search(String text);
-
-    List<ItemDto> search(String text, int from, int size);
+    List<ItemDto> search(String text, Integer from, Integer size);
 
     void checkOwner(long userId, long itemId);
 

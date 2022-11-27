@@ -14,12 +14,30 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     Page<Booking> findByBookerId(long bookerId, Pageable pageable);
 
-    @Query(value = "SELECT * from bookings " +
-            "join items i on i.id = bookings.item_id " +
-            "where user_id = ? " +
-            "ORDER BY bookings.id DESC",
-            nativeQuery = true)
-    List<Booking> findBookingsByBookerIdJoinItem(long bookerId);
+    @Query(value = "SELECT * from bookings where BOOKER_ID = ?1 " +
+            "and start_date < ?2 and END_DATE > ?2 ORDER BY START_DATE DESC", nativeQuery = true)
+    Page<Booking> findCurrentBookingsByBookerId(long bookerId, LocalDateTime now, Pageable pageable);
+
+    @Query(value = "SELECT * from bookings where BOOKER_ID = ? " +
+            "and start_date > ? ORDER BY START_DATE DESC", nativeQuery = true)
+    Page<Booking> findFutureBookingsByBookerId(long bookerId, LocalDateTime now, Pageable pageable);
+
+    @Query(value = "SELECT * from bookings where BOOKER_ID = ? " +
+            "and end_date < ? ORDER BY START_DATE DESC", nativeQuery = true)
+    Page<Booking> findPastBookingsByBookerId(long bookerId, LocalDateTime now, Pageable pageable);
+
+    Page<Booking> findBookingByBooker_IdAndStatusIs(long bookerId, BookingStatus status, Pageable pageable);
+
+    Page<Booking> findByItem_userIdAndEndAfterAndStartBeforeOrderByStartDesc(long userId, LocalDateTime now1,
+                                                                             LocalDateTime now2, Pageable pageable);
+
+    Page<Booking> findByItem_userIdAndStartAfterOrderByStartDesc(long userId, LocalDateTime now, Pageable pageable);
+
+    Page<Booking> findByItem_userIdAndEndBeforeOrderByStartDesc(long userId, LocalDateTime now, Pageable pageable);
+
+    Page<Booking> findByItem_UserIdAndStatusOrderByStartDesc(long userId, BookingStatus status, Pageable pageable);
+
+    Page<Booking> findByItem_UserIdOrderByStartDesc(long userId, Pageable pageable);
 
     List<Booking> findByItem_IdAndEndIsBeforeOrderByEndDesc(long itemId, LocalDateTime end);
 

@@ -306,7 +306,7 @@ public class ItemServiceImplIntegrationTest {
         itemDto.setDescription("Description2");
         service.saveNewItem(userDtoSaved.getId(), itemDto);
 
-        List<ItemDto> itemDtos = service.getItemByUserId(userDtoSaved.getId());
+        List<ItemDto> itemDtos = service.getItemByUserId(userDtoSaved.getId(), null, null);
 
         assertThat(itemDtos.size(), equalTo(2));
     }
@@ -425,7 +425,7 @@ public class ItemServiceImplIntegrationTest {
         itemDto.setDescription("Very good screwdriver");
         service.saveNewItem(userDtoSaved.getId(), itemDto);
 
-        List<ItemDto> itemDtos = service.search("screwdriver");
+        List<ItemDto> itemDtos = service.search("screwdriver", null, null);
 
         assertThat(itemDtos.size(), equalTo(1));
         assertThat(itemDtos.get(0).getDescription(), equalTo(itemDto.getDescription()));
@@ -447,7 +447,7 @@ public class ItemServiceImplIntegrationTest {
         service.saveNewItem(userDtoSaved.getId(), itemDto);
         service.saveNewItem(userDtoSaved.getId(), itemDto);
 
-        List<ItemDto> itemDtos1 = service.search("screwdriver");
+        List<ItemDto> itemDtos1 = service.search("screwdriver", null, null);
 
         assertThat(itemDtos1.size(), equalTo(2));
 

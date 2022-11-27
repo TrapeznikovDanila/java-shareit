@@ -49,40 +49,7 @@ public class BookingController {
                                                           @RequestParam(required = false) String state,
                                                           @RequestParam(required = false) Integer from,
                                                           @RequestParam(required = false) Integer size) {
-        if (state == null || state.equals("ALL")) {
-            if ((from == null) || (size == null)) {
-                return bookingService.getBookingsByBookerId(bookerId, BookingState.ALL);
-            }
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.ALL, from, size);
-        } else if (state.equals("PAST")) {
-            if ((from == null) || (size == null)) {
-                return bookingService.getBookingsByBookerId(bookerId, BookingState.PAST);
-            }
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.PAST, from, size);
-        } else if (state.equals("FUTURE")) {
-            if ((from == null) || (size == null)) {
-                return bookingService.getBookingsByBookerId(bookerId, BookingState.FUTURE);
-            }
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.FUTURE, from, size);
-        } else if (state.equals("CURRENT")) {
-            if ((from == null) || (size == null)) {
-                return bookingService.getBookingsByBookerId(bookerId, BookingState.CURRENT);
-            }
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.CURRENT, from, size);
-        } else if (state.equals("WAITING")) {
-            if ((from == null) || (size == null)) {
-                return bookingService.getBookingsByBookerId(bookerId, BookingState.WAITING);
-            }
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.WAITING, from, size);
-        } else if (state.equals("REJECTED")) {
-            if ((from == null) || (size == null)) {
-                return bookingService.getBookingsByBookerId(bookerId, BookingState.REJECTED);
-            }
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.REJECTED, from, size);
-        } else {
-            log.error("Unknown state: " + state);
-            throw new ValidationException("Unknown state: " + state);
-        }
+        return bookingService.getBookingsByBookerId(bookerId, state, from, size);
     }
 
     @GetMapping("/owner")
@@ -92,9 +59,6 @@ public class BookingController {
                                                                     @RequestParam(required = false) Integer size) {
         fillMap();
         if (bookingStates.containsKey(state)) {
-            if ((from == null) || (size == null)) {
-                return bookingService.getBookingsForAllItemsByOwnerId(userId, bookingStates.get(state));
-            }
             return bookingService.getBookingsForAllItemsByOwnerId(userId, bookingStates.get(state), from, size);
         } else {
             log.error("Unknown state: " + state);

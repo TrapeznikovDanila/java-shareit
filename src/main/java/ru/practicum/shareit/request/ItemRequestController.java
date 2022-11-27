@@ -18,19 +18,21 @@ public class ItemRequestController {
 
     @PostMapping
     public ItemRequestDto saveNewItemRequest(@RequestHeader("X-Sharer-User-Id") long userId,
-                                  @RequestBody ItemRequestDto itemRequestDto) {
+                                             @RequestBody ItemRequestDto itemRequestDto) {
         return itemRequestService.saveNewItemRequest(userId, itemRequestDto);
     }
 
     @GetMapping
-    public List<ItemRequestDto> getItemRequestByAuthor(@RequestHeader("X-Sharer-User-Id") long userId) {
-        return itemRequestService.getItemRequestByAuthor(userId);
+    public List<ItemRequestDto> getItemRequestByAuthor(@RequestHeader("X-Sharer-User-Id") long userId,
+                                                       @RequestParam(required = false) Integer from,
+                                                       @RequestParam(required = false) Integer size) {
+        return itemRequestService.getItemRequestByAuthor(userId, from, size);
     }
 
     @GetMapping("/all")
     public List<ItemRequestDto> getItemRequests(@RequestHeader("X-Sharer-User-Id") long userId,
-                                                                    @RequestParam(required = false) Integer from,
-                                                                    @RequestParam(required = false) Integer size) {
+                                                @RequestParam(required = false) Integer from,
+                                                @RequestParam(required = false) Integer size) {
         if ((from == null) || (size == null)) {
             return itemRequestService.findAll(userId);
         }
@@ -39,7 +41,7 @@ public class ItemRequestController {
 
     @GetMapping("/{itemRequestId}")
     public ItemRequestDto getItemRequestById(@RequestHeader("X-Sharer-User-Id") long userId,
-                               @PathVariable long itemRequestId) {
+                                             @PathVariable long itemRequestId) {
         return itemRequestService.getItemRequestById(userId, itemRequestId);
     }
 

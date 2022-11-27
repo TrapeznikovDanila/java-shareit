@@ -19,10 +19,7 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -105,56 +102,44 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
-
     @Override
-    public List<ItemDto> getItemByUserId(long userId) {
-        List<Item> items = itemRepository.findItemByUserId(userId);
-        List<ItemDto> itemsForOwnerDto = new ArrayList<>();
-        for (Item item : items) {
-            ItemDto itemDto = setLastAndNextBooking(ItemMapper.makeItemDto(item), item.getId());
-            itemDto.setComments(commentRepository.findCommentsByItemId(item.getId())
-                    .stream()
-                    .map(CommentsMapper::makeCommentDto)
-                    .collect(Collectors.toList()));
-            itemsForOwnerDto.add(itemDto);
+    public List<ItemDto> getItemByUserId(long userId, Integer from, Integer size) {
+        checkUserId(userId);
+        if (from == null) {
+            from = 0;
         }
-        return itemsForOwnerDto;
-    }
-
-    @Override
-    public List<ItemDto> getItemByUserId(long userId, int from, int size) {
+        if (size == null) {
+            size = 10;
+        }
         pageParametersValidation(from, size);
         Page<Item> items = itemRepository.findItemByUserId(userId, PageRequest.of((from / size), size));
+        List<Comments> allComments = commentRepository.findAll();
         List<ItemDto> itemsForOwnerDto = new ArrayList<>();
         for (Item item : items) {
             ItemDto itemDto = setLastAndNextBooking(ItemMapper.makeItemDto(item), item.getId());
-            itemDto.setComments(commentRepository.findCommentsByItemId(item.getId())
-                    .stream()
-                    .map(CommentsMapper::makeCommentDto)
-                    .collect(Collectors.toList()));
+            List<CommentsDto> comments = new ArrayList<>();
+            for (Comments comment : allComments) {
+                if (comment.getItemId() == item.getId()) {
+                    comments.add(CommentsMapper.makeCommentDto(comment));
+                }
+            }
+            itemDto.setComments(comments);
             itemsForOwnerDto.add(itemDto);
         }
         return itemsForOwnerDto;
     }
 
     @Override
-    public List<ItemDto> search(String text) {
-        Set<Item> items = Stream.concat(itemRepository
-                                .findByNameContainingIgnoreCase(text)
-                                .stream(),
-                        itemRepository
-                                .findByDescriptionContainingIgnoreCase(text)
-                                .stream())
-                .filter(item -> item.getAvailable() == true)
-                .collect(Collectors.toSet());
-
-        return items.stream().map(ItemMapper::makeItemDto)
-                .sorted((i1, i2) -> (int) (i1.getId() - i2.getId()))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<ItemDto> search(String text, int from, int size) {
+    public List<ItemDto> search(String text, Integer from, Integer size) {
+        if ((text == null) || text.isBlank()) {
+            return Collections.emptyList();
+        }
+        if (from == null) {
+            from = 0;
+        }
+        if (size == null) {
+            size = 10;
+        }
         pageParametersValidation(from, size);
         Set<Item> items = Stream.concat(itemRepository
                                 .findByNameContainingIgnoreCase(text)

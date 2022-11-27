@@ -77,8 +77,8 @@ public class BookingServiceImplIntegrationTest {
     void saveNewBookingTest() {
         BookingRequestDto bookingRequestDto = new BookingRequestDto();
         bookingRequestDto.setItemId(itemFromService.getId());
-        bookingRequestDto.setStart(LocalDateTime.now().plusNanos(4000000));
-        bookingRequestDto.setEnd(LocalDateTime.now().plusNanos(8000000));
+        bookingRequestDto.setStart(LocalDateTime.now().plusSeconds(40));
+        bookingRequestDto.setEnd(LocalDateTime.now().plusSeconds(80));
         service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
 
         TypedQuery<Booking> query = em.createQuery("SELECT b from Booking b where b.item.id = :id",
@@ -102,7 +102,8 @@ public class BookingServiceImplIntegrationTest {
         try {
             service.saveNewBooking(userDtoSaved1.getId(), bookingRequestDto);
         } catch (NotFoundException e) {
-            assertThat(e.getMessage(), equalTo("The user cannot rent his items"));
+            assertThat(e.getMessage(), equalTo("This item already belongs to you, " +
+                    "so you can't rent it"));
         }
     }
 
@@ -307,6 +308,29 @@ public class BookingServiceImplIntegrationTest {
     }
 
     @Test
+    void getBookingById() {
+        Booking newBooking = new Booking();
+        newBooking.setItem(ItemMapper.makeItem(itemFromService));
+        newBooking.setStart(LocalDateTime.now().minusSeconds(10));
+        newBooking.setEnd(LocalDateTime.now().minusSeconds(5));
+        newBooking.setBooker(UserMapper.makeUser(userDtoSaved2));
+        newBooking.setStatus(BookingStatus.APPROVED);
+        Booking bookingFromRepository = repository.save(newBooking);
+        BookingResponseDto bookingResponseDto = service.getBookingById(userDtoSaved1.getId(),
+                bookingFromRepository.getId());
+
+        TypedQuery<Booking> query = em.createQuery("SELECT b from Booking b where b.id = :id",
+                Booking.class);
+        Booking booking = query
+                .setParameter("id", bookingFromRepository.getId())
+                .getSingleResult();
+
+        assertThat(booking.getId(), notNullValue());
+        assertThat(booking.getBooker().getId(), equalTo(bookingResponseDto.getBooker().getId()));
+        assertThat(booking.getItem().getId(), equalTo(bookingResponseDto.getItem().getId()));
+    }
+
+    @Test
     void getBookingByIdByBookerTest() {
         Booking newBooking = new Booking();
         newBooking.setItem(ItemMapper.makeItem(itemFromService));
@@ -327,109 +351,6 @@ public class BookingServiceImplIntegrationTest {
         assertThat(booking.getItem().getId(), equalTo(newBooking.getItem().getId()));
     }
 
-
-    @Test
-    void getBookingsByBookerIdWithCurrenStateTest() {
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.now().minusSeconds(30));
-        booking.setEnd(LocalDateTime.now().plusSeconds(10));
-        booking.setStatus(BookingStatus.APPROVED);
-        Booking bookingFromRepository = repository.save(booking);
-
-        List<BookingResponseDto> bookingResponseDtos = service.getBookingsByBookerId(userDtoSaved2.getId(),
-                BookingState.CURRENT);
-
-        assertThat(bookingResponseDtos.size(), equalTo(1));
-        assertThat(bookingResponseDtos.get(0).getId(), equalTo(bookingFromRepository.getId()));
-    }
-
-    @Test
-    void getBookingsByBookerIdWithPastStateTest() {
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.now().minusSeconds(30));
-        booking.setEnd(LocalDateTime.now().minusSeconds(10));
-        booking.setStatus(BookingStatus.APPROVED);
-        Booking bookingFromRepository = repository.save(booking);
-
-        List<BookingResponseDto> bookingResponseDtos = service.getBookingsByBookerId(userDtoSaved2.getId(),
-                BookingState.PAST);
-
-        assertThat(bookingResponseDtos.size(), equalTo(1));
-        assertThat(bookingResponseDtos.get(0).getId(), equalTo(bookingFromRepository.getId()));
-    }
-
-    @Test
-    void getBookingsByBookerIdWithFutureStateTest() {
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.now().plusSeconds(100));
-        booking.setEnd(LocalDateTime.now().plusSeconds(120));
-        booking.setStatus(BookingStatus.APPROVED);
-        Booking bookingFromRepository = repository.save(booking);
-
-        List<BookingResponseDto> bookingResponseDtos = service.getBookingsByBookerId(userDtoSaved2.getId(),
-                BookingState.FUTURE);
-
-        assertThat(bookingResponseDtos.size(), equalTo(1));
-        assertThat(bookingResponseDtos.get(0).getId(), equalTo(bookingFromRepository.getId()));
-    }
-
-    @Test
-    void getBookingsByBookerIdWithRejectedStateTest() {
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.now().minusSeconds(100));
-        booking.setEnd(LocalDateTime.now().minusSeconds(80));
-        booking.setStatus(BookingStatus.REJECTED);
-        Booking bookingFromRepository = repository.save(booking);
-
-        List<BookingResponseDto> bookingResponseDtos = service.getBookingsByBookerId(userDtoSaved2.getId(),
-                BookingState.REJECTED);
-
-        assertThat(bookingResponseDtos.size(), equalTo(1));
-        assertThat(bookingResponseDtos.get(0).getId(), equalTo(bookingFromRepository.getId()));
-    }
-
-    @Test
-    void getBookingsByBookerIdWithWaitingStateTest() {
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.now().minusSeconds(100));
-        booking.setEnd(LocalDateTime.now().minusSeconds(80));
-        booking.setStatus(BookingStatus.WAITING);
-        Booking bookingFromRepository = repository.save(booking);
-
-        List<BookingResponseDto> bookingResponseDtos = service.getBookingsByBookerId(userDtoSaved2.getId(),
-                BookingState.WAITING);
-
-        assertThat(bookingResponseDtos.size(), equalTo(1));
-        assertThat(bookingResponseDtos.get(0).getId(), equalTo(bookingFromRepository.getId()));
-    }
-
-    @Test
-    void getBookingsByBookerIdWithoutStateTest() {
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.now().minusSeconds(100));
-        booking.setEnd(LocalDateTime.now().minusSeconds(80));
-        booking.setStatus(BookingStatus.WAITING);
-        Booking bookingFromRepository = repository.save(booking);
-
-        List<BookingResponseDto> bookingResponseDtos = service.getBookingsByBookerId(userDtoSaved2.getId(),
-                null);
-
-        assertThat(bookingResponseDtos.size(), equalTo(1));
-        assertThat(bookingResponseDtos.get(0).getId(), equalTo(bookingFromRepository.getId()));
-    }
-
     @Test
     void getBookingsByBookerIdWithCurrenStateWithPaginationTest() {
         Booking booking1 = new Booking();
@@ -448,7 +369,7 @@ public class BookingServiceImplIntegrationTest {
         repository.save(booking2);
 
         List<BookingResponseDto> bookingResponseDtos = service.getBookingsByBookerId(userDtoSaved2.getId(),
-                BookingState.CURRENT, 1, 1);
+                "CURRENT", 1, 1);
 
         assertThat(bookingResponseDtos.size(), equalTo(1));
     }
@@ -471,7 +392,7 @@ public class BookingServiceImplIntegrationTest {
         repository.save(booking2);
 
         List<BookingResponseDto> bookingResponseDtos = service.getBookingsByBookerId(userDtoSaved2.getId(),
-                BookingState.PAST, 1, 1);
+                "PAST", 1, 1);
 
         assertThat(bookingResponseDtos.size(), equalTo(1));
     }
@@ -494,7 +415,7 @@ public class BookingServiceImplIntegrationTest {
         repository.save(booking2);
 
         List<BookingResponseDto> bookingResponseDtos = service.getBookingsByBookerId(userDtoSaved2.getId(),
-                BookingState.FUTURE, 1, 1);
+                "FUTURE", 1, 1);
 
         assertThat(bookingResponseDtos.size(), equalTo(1));
     }
@@ -517,7 +438,7 @@ public class BookingServiceImplIntegrationTest {
         repository.save(booking2);
 
         List<BookingResponseDto> bookingResponseDtos1 = service.getBookingsByBookerId(userDtoSaved2.getId(),
-                BookingState.REJECTED, 1, 1);
+                "REJECTED", 1, 1);
 
         assertThat(bookingResponseDtos1.size(), equalTo(1));
     }
@@ -540,7 +461,7 @@ public class BookingServiceImplIntegrationTest {
         repository.save(booking2);
 
         List<BookingResponseDto> bookingResponseDtos = service.getBookingsByBookerId(userDtoSaved2.getId(),
-                BookingState.WAITING, 1, 1);
+                "WAITING", 1, 1);
 
         assertThat(bookingResponseDtos.size(), equalTo(1));
     }
@@ -598,108 +519,6 @@ public class BookingServiceImplIntegrationTest {
         } catch (ValidationException e) {
             assertThat(e.getMessage(), equalTo("The size parameter must be positive number"));
         }
-    }
-
-    @Test
-    void getBookingsForAllItemsByOwnerIdWithCurrenStateTest() {
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.now().minusSeconds(20));
-        booking.setEnd(LocalDateTime.now().plusSeconds(5));
-        booking.setStatus(BookingStatus.APPROVED);
-        Booking bookingFromRepository = repository.save(booking);
-
-        List<BookingResponseDto> bookingResponseDtos = service.getBookingsForAllItemsByOwnerId(userDtoSaved1.getId(),
-                BookingState.CURRENT);
-
-        assertThat(bookingResponseDtos.size(), equalTo(1));
-        assertThat(bookingResponseDtos.get(0).getId(), equalTo(bookingFromRepository.getId()));
-    }
-
-    @Test
-    void getBookingsForAllItemsByOwnerIdWithPastStateTest() {
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.now().minusSeconds(20));
-        booking.setEnd(LocalDateTime.now().minusSeconds(5));
-        booking.setStatus(BookingStatus.APPROVED);
-        Booking bookingFromRepository = repository.save(booking);
-
-        List<BookingResponseDto> bookingResponseDtos = service.getBookingsForAllItemsByOwnerId(userDtoSaved1.getId(),
-                BookingState.PAST);
-
-        assertThat(bookingResponseDtos.size(), equalTo(1));
-        assertThat(bookingResponseDtos.get(0).getId(), equalTo(bookingFromRepository.getId()));
-    }
-
-    @Test
-    void getBookingsForAllItemsByOwnerIdWithFutureStateTest() {
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.now().plusSeconds(20));
-        booking.setEnd(LocalDateTime.now().plusSeconds(30));
-        booking.setStatus(BookingStatus.APPROVED);
-        Booking bookingFromRepository = repository.save(booking);
-
-        List<BookingResponseDto> bookingResponseDtos = service.getBookingsForAllItemsByOwnerId(userDtoSaved1.getId(),
-                BookingState.FUTURE);
-
-        assertThat(bookingResponseDtos.size(), equalTo(1));
-        assertThat(bookingResponseDtos.get(0).getId(), equalTo(bookingFromRepository.getId()));
-    }
-
-    @Test
-    void getBookingsForAllItemsByOwnerIdWithRejectedStateTest() {
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.now().plusSeconds(20));
-        booking.setEnd(LocalDateTime.now().plusSeconds(30));
-        booking.setStatus(BookingStatus.REJECTED);
-        Booking bookingFromRepository = repository.save(booking);
-
-        List<BookingResponseDto> bookingResponseDtos = service.getBookingsForAllItemsByOwnerId(userDtoSaved1.getId(),
-                BookingState.REJECTED);
-
-        assertThat(bookingResponseDtos.size(), equalTo(1));
-        assertThat(bookingResponseDtos.get(0).getId(), equalTo(bookingFromRepository.getId()));
-    }
-
-    @Test
-    void getBookingsForAllItemsByOwnerIdWithWaitingStateTest() {
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.now().plusSeconds(20));
-        booking.setEnd(LocalDateTime.now().plusSeconds(30));
-        booking.setStatus(BookingStatus.WAITING);
-        Booking bookingFromRepository = repository.save(booking);
-
-        List<BookingResponseDto> bookingResponseDtos = service.getBookingsForAllItemsByOwnerId(userDtoSaved1.getId(),
-                BookingState.WAITING);
-
-        assertThat(bookingResponseDtos.size(), equalTo(1));
-        assertThat(bookingResponseDtos.get(0).getId(), equalTo(bookingFromRepository.getId()));
-    }
-
-    @Test
-    void getBookingsForAllItemsByOwnerIdWithoutStateTest() {
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.now().plusSeconds(20));
-        booking.setEnd(LocalDateTime.now().plusSeconds(30));
-        booking.setStatus(BookingStatus.WAITING);
-        Booking bookingFromRepository = repository.save(booking);
-
-        List<BookingResponseDto> bookingResponseDtos = service.getBookingsForAllItemsByOwnerId(userDtoSaved1.getId(),
-                null);
-
-        assertThat(bookingResponseDtos.size(), equalTo(1));
-        assertThat(bookingResponseDtos.get(0).getId(), equalTo(bookingFromRepository.getId()));
     }
 
     @Test

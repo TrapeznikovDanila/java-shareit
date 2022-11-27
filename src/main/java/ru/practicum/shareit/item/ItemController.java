@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.CommentsDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -43,9 +42,6 @@ public class ItemController {
     public List<ItemDto> getItemsByUserId(@RequestHeader("X-Sharer-User-Id") long userId,
                                           @RequestParam(required = false) Integer from,
                                           @RequestParam(required = false) Integer size) {
-        if ((from == null) || (size == null)) {
-            return itemService.getItemByUserId(userId);
-        }
         return itemService.getItemByUserId(userId, from, size);
     }
 
@@ -53,12 +49,6 @@ public class ItemController {
     public List<ItemDto> search(@RequestParam(required = false) String text,
                                 @RequestParam(required = false) Integer from,
                                 @RequestParam(required = false) Integer size) {
-        if ((text == null) || text.isBlank()) {
-            return Collections.emptyList();
-        }
-        if ((from == null) || (size == null)) {
-            return itemService.search(text);
-        }
         return itemService.search(text, from, size);
     }
 

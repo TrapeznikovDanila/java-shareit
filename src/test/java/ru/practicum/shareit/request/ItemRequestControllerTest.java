@@ -76,11 +76,11 @@ public class ItemRequestControllerTest {
 
     @Test
     void getItemRequestByAuthorTest() throws Exception {
-        when(service.getItemRequestByAuthor(anyLong()))
+        when(service.getItemRequestByAuthor(anyLong(), anyInt(), anyInt()))
                 .thenReturn(Arrays.asList(itemRequestDto, itemRequestDto));
 
 
-        mvc.perform(get("/requests")
+        mvc.perform(get("/requests?from=0&size=2")
                         .header("X-Sharer-User-Id", 1)
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)

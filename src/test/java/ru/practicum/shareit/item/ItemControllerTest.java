@@ -121,24 +121,6 @@ public class ItemControllerTest {
     }
 
     @Test
-    void getItemsByUserIdTest() throws Exception {
-        when(service.getItemByUserId(anyLong()))
-                .thenReturn(Arrays.asList(itemDto, itemDto));
-
-
-        mvc.perform(get("/items")
-                        .header("X-Sharer-User-Id", 1)
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*]", hasSize(2)))
-                .andExpect(jsonPath("$[*].id", containsInAnyOrder(1, 1)))
-                .andExpect(jsonPath("$[*].description", containsInAnyOrder("description",
-                        "description")));
-    }
-
-    @Test
     void getItemsByUserIdWithParamTest() throws Exception {
         when(service.getItemByUserId(anyLong(), anyInt(), anyInt()))
                 .thenReturn(Arrays.asList(itemDto));
@@ -153,24 +135,6 @@ public class ItemControllerTest {
                 .andExpect(jsonPath("$[*]", hasSize(1)))
                 .andExpect(jsonPath("$[0].id", is(1)))
                 .andExpect(jsonPath("$[0].description", is("description")));
-    }
-
-    @Test
-    void searchTest() throws Exception {
-        when(service.search(anyString()))
-                .thenReturn(Arrays.asList(itemDto, itemDto));
-
-
-        mvc.perform(get("/items/search?text=name")
-                        .header("X-Sharer-User-Id", 1)
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*]", hasSize(2)))
-                .andExpect(jsonPath("$[*].id", containsInAnyOrder(1, 1)))
-                .andExpect(jsonPath("$[*].description", containsInAnyOrder("description",
-                        "description")));
     }
 
     @Test

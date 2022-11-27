@@ -2,15 +2,19 @@ package ru.practicum.shareit.request;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.ItemRepository;
+import ru.practicum.shareit.item.dto.ItemForRequestDto;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -36,18 +40,29 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     }
 
     @Override
-    public List<ItemRequestDto> getItemRequestByAuthor(long userId) {
+    public List<ItemRequestDto> getItemRequestByAuthor(long userId, Integer from, Integer size) {
         checkUserId(userId);
-        List<ItemRequestDto> itemsRequests = itemRequestsRepository.getItemRequestByUserId(userId)
+        if (from == null) {
+            from = 0;
+        }
+        if (size == null) {
+            size = 10;
+        }
+        pageParametersValidation(from, size);
+        List<ItemRequestDto> itemsRequests = itemRequestsRepository.getItemRequestByUserIdOrderByCreated(userId,
+                        PageRequest.of(from / size, size))
                 .stream()
                 .map(ItemRequestMapper::makeItemRequestDto)
-                .sorted(Comparator.comparing(ItemRequestDto::getCreated))
                 .collect(Collectors.toList());
+        List<Item> items =  itemRepository.findAll();
         for (ItemRequestDto itemRequest : itemsRequests) {
-            itemRequest.setItems(itemRepository.getItemByRequestId(itemRequest.getId())
-                    .stream()
-                    .map(ItemMapper::makeItemForRequestDto)
-                    .collect(Collectors.toList()));
+            List<ItemForRequestDto> itemForRequestDtos = new ArrayList<>();
+            for (Item item : items) {
+                if (item.getRequestId() == itemRequest.getId()) {
+                    itemForRequestDtos.add(ItemMapper.makeItemForRequestDto(item));
+                }
+            }
+            itemRequest.setItems(itemForRequestDtos);
         }
         return itemsRequests;
     }
@@ -56,19 +71,20 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     public List<ItemRequestDto> getItemRequests(long userId, int from, int size) {
         checkUserId(userId);
         pageParametersValidation(from, size);
-        List<ItemRequestDto> itemsRequests = itemRequestsRepository.findAll()
+        List<ItemRequestDto> itemsRequests = itemRequestsRepository.findAllNotForUserId(userId,
+                        PageRequest.of(from / size, size))
                 .stream()
-                .filter(i -> i.getUserId() != userId)
                 .map(ItemRequestMapper::makeItemRequestDto)
-                .sorted(Comparator.comparing(ItemRequestDto::getCreated))
-                .skip(from)
-                .limit(size)
                 .collect(Collectors.toList());
+        List<Item> items =  itemRepository.findAll();
         for (ItemRequestDto itemRequest : itemsRequests) {
-            itemRequest.setItems(itemRepository.getItemByRequestId(itemRequest.getId())
-                    .stream()
-                    .map(ItemMapper::makeItemForRequestDto)
-                    .collect(Collectors.toList()));
+            List<ItemForRequestDto> itemForRequestDtos = new ArrayList<>();
+            for (Item item : items) {
+                if (item.getRequestId() == itemRequest.getId()) {
+                    itemForRequestDtos.add(ItemMapper.makeItemForRequestDto(item));
+                }
+            }
+            itemRequest.setItems(itemForRequestDtos);
         }
         return itemsRequests;
     }
