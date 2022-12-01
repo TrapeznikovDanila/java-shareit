@@ -54,7 +54,6 @@ public class UserServiceImpl implements UserService {
         userDto.setId(userId);
         return UserMapper
                 .makeUserDto(userRepository.save(UserMapper.makeUser(userDto)));
-
     }
 
     @Override

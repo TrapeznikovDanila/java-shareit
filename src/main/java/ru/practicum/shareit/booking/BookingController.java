@@ -46,31 +46,20 @@ public class BookingController {
 
     @GetMapping
     public List<BookingResponseDto> getBookingsByBookerId(@RequestHeader("X-Sharer-User-Id") long bookerId,
-                                                          @RequestParam(required = false) String state) {
-        if (state == null || state.equals("ALL")) {
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.ALL);
-        } else if (state.equals("PAST")) {
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.PAST);
-        } else if (state.equals("FUTURE")) {
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.FUTURE);
-        } else if (state.equals("CURRENT")) {
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.CURRENT);
-        } else if (state.equals("WAITING")) {
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.WAITING);
-        } else if (state.equals("REJECTED")) {
-            return bookingService.getBookingsByBookerId(bookerId, BookingState.REJECTED);
-        } else {
-            log.error("Unknown state: " + state);
-            throw new ValidationException("Unknown state: " + state);
-        }
+                                                          @RequestParam(required = false) String state,
+                                                          @RequestParam(required = false) Integer from,
+                                                          @RequestParam(required = false) Integer size) {
+        return bookingService.getBookingsByBookerId(bookerId, state, from, size);
     }
 
     @GetMapping("/owner")
     public List<BookingResponseDto> getBookingsForAllItemsByOwnerId(@RequestHeader("X-Sharer-User-Id") long userId,
-                                                                    @RequestParam(required = false) String state) {
+                                                                    @RequestParam(required = false) String state,
+                                                                    @RequestParam(required = false) Integer from,
+                                                                    @RequestParam(required = false) Integer size) {
         fillMap();
         if (bookingStates.containsKey(state)) {
-            return bookingService.getBookingsForAllItemsByOwnerId(userId, bookingStates.get(state));
+            return bookingService.getBookingsForAllItemsByOwnerId(userId, bookingStates.get(state), from, size);
         } else {
             log.error("Unknown state: " + state);
             throw new ValidationException("Unknown state: " + state);

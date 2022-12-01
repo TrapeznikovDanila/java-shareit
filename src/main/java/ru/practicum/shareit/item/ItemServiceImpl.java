@@ -2,6 +2,8 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingMapper;
@@ -11,15 +13,13 @@ import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.CommentsDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemForRequestDto;
 import ru.practicum.shareit.item.model.Comments;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -102,30 +102,53 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
-
     @Override
-    public List<ItemDto> getItemByUserId(long userId) {
-        List<Item> items = itemRepository.findItemByUserId(userId);
+    public List<ItemDto> getItemByUserId(long userId, Integer from, Integer size) {
+        checkUserId(userId);
+        if (from == null) {
+            from = 0;
+        }
+        if (size == null) {
+            size = 10;
+        }
+        pageParametersValidation(from, size);
+        Page<Item> items = itemRepository.findItemByUserId(userId, PageRequest.of((from / size), size));
+        List<Comments> allComments = commentRepository.findAll();
         List<ItemDto> itemsForOwnerDto = new ArrayList<>();
         for (Item item : items) {
             ItemDto itemDto = setLastAndNextBooking(ItemMapper.makeItemDto(item), item.getId());
-            itemDto.setComments(commentRepository.findCommentsByItemId(item.getId())
-                    .stream()
-                    .map(CommentsMapper::makeCommentDto)
-                    .collect(Collectors.toList()));
+            List<CommentsDto> comments = new ArrayList<>();
+            for (Comments comment : allComments) {
+                if (comment.getItemId() == item.getId()) {
+                    comments.add(CommentsMapper.makeCommentDto(comment));
+                }
+            }
+            itemDto.setComments(comments);
             itemsForOwnerDto.add(itemDto);
         }
         return itemsForOwnerDto;
     }
 
     @Override
-    public List<ItemDto> search(String text) {
+    public List<ItemDto> search(String text, Integer from, Integer size) {
+        if ((text == null) || text.isBlank()) {
+            return Collections.emptyList();
+        }
+        if (from == null) {
+            from = 0;
+        }
+        if (size == null) {
+            size = 10;
+        }
+        pageParametersValidation(from, size);
         Set<Item> items = Stream.concat(itemRepository
                                 .findByNameContainingIgnoreCase(text)
                                 .stream(),
                         itemRepository
                                 .findByDescriptionContainingIgnoreCase(text)
                                 .stream())
+                .skip(from)
+                .limit(size)
                 .filter(item -> item.getAvailable() == true)
                 .collect(Collectors.toSet());
 
@@ -208,6 +231,14 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
+    @Override
+    public List<ItemForRequestDto> getItemsByRequestId(long requestId) {
+        return itemRepository.getItemByRequestId(requestId)
+                .stream()
+                .map(ItemMapper::makeItemForRequestDto)
+                .collect(Collectors.toList());
+    }
+
     private void commentsValidation(CommentsDto commentDto) {
         if ((commentDto.getText() == null) || commentDto.getText().isBlank()) {
             throw new ValidationException("Comment text is empty");
@@ -219,5 +250,13 @@ public class ItemServiceImpl implements ItemService {
                 .stream()
                 .map(CommentsMapper::makeCommentDto)
                 .collect(Collectors.toList());
+    }
+
+    private void pageParametersValidation(int from, int size) {
+        if (from < 0) {
+            throw new ValidationException("The from parameter can't be negative number");
+        } else if (size <= 0) {
+            throw new ValidationException("The size parameter must be positive number");
+        }
     }
 }
