@@ -25,6 +25,7 @@ public class Booking {
     @ManyToOne
     @JoinColumn(name = "ITEM_ID")
     private Item item;
+    @Enumerated(EnumType.STRING)
     private BookingStatus status;
     @Column(name = "START_DATE")
     private LocalDateTime start;

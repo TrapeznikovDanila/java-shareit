@@ -112,7 +112,7 @@ public class ItemServiceImpl implements ItemService {
             size = 10;
         }
         pageParametersValidation(from, size);
-        Page<Item> items = itemRepository.findItemByUserId(userId, PageRequest.of((from / size), size));
+        Page<Item> items = itemRepository.findItemByUserIdOrderById(userId, PageRequest.of((from / size), size));
         List<Comments> allComments = commentRepository.findAll();
         List<ItemDto> itemsForOwnerDto = new ArrayList<>();
         for (Item item : items) {
