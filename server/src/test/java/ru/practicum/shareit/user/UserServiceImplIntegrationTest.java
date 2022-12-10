@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import javax.persistence.EntityManager;
@@ -43,19 +42,6 @@ public class UserServiceImplIntegrationTest {
         assertThat(user.getId(), notNullValue());
         assertThat(user.getName(), equalTo(userDto.getName()));
         assertThat(user.getEmail(), equalTo(userDto.getEmail()));
-    }
-
-    @Test
-    void saveNewUserEmailValidationExceptionTest() {
-        UserDto userDto = new UserDto();
-        userDto.setName("Name");
-        userDto.setEmail("email.ru");
-
-        try {
-            service.saveNewUser(userDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("Email error"));
-        }
     }
 
     @Test

@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.ItemServiceImpl;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -108,133 +107,6 @@ public class BookingServiceImplIntegrationTest {
     }
 
     @Test
-    void saveNewBookingWithUnavailableItemTest() {
-        BookingRequestDto bookingRequestDto = new BookingRequestDto();
-        itemFromService.setAvailable(false);
-        itemService.updateItem(userDtoSaved1.getId(), itemFromService.getId(), itemFromService);
-        bookingRequestDto.setItemId(itemFromService.getId());
-        bookingRequestDto.setStart(LocalDateTime.now().plusNanos(4000000));
-        bookingRequestDto.setEnd(LocalDateTime.now().plusNanos(8000000));
-
-        try {
-            service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("This item isn't available"));
-        }
-    }
-
-    @Test
-    void saveNewBookingWithoutStartItemTest() {
-        BookingRequestDto bookingRequestDto = new BookingRequestDto();
-        itemFromService.setAvailable(false);
-        itemService.updateItem(userDtoSaved1.getId(), itemFromService.getId(), itemFromService);
-        bookingRequestDto.setItemId(itemFromService.getId());
-        bookingRequestDto.setEnd(LocalDateTime.now().plusNanos(8000000));
-
-        try {
-            service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The booking start time field cannot be empty"));
-        }
-    }
-
-    @Test
-    void saveNewBookingWithoutEndItemTest() {
-        BookingRequestDto bookingRequestDto = new BookingRequestDto();
-        itemFromService.setAvailable(false);
-        itemService.updateItem(userDtoSaved1.getId(), itemFromService.getId(), itemFromService);
-        bookingRequestDto.setItemId(itemFromService.getId());
-        bookingRequestDto.setStart(LocalDateTime.now().plusNanos(4000000));
-
-        try {
-            service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The booking end time field cannot be empty"));
-        }
-    }
-
-    @Test
-    void saveNewBookingWithWrongStartItemTest() {
-        BookingRequestDto bookingRequestDto = new BookingRequestDto();
-        itemFromService.setAvailable(false);
-        itemService.updateItem(userDtoSaved1.getId(), itemFromService.getId(), itemFromService);
-        bookingRequestDto.setItemId(itemFromService.getId());
-        bookingRequestDto.setStart(LocalDateTime.now().minusSeconds(4));
-        bookingRequestDto.setEnd(LocalDateTime.now().plusNanos(8000000));
-
-        try {
-            service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The booking start time can't be in past"));
-        }
-    }
-
-    @Test
-    void saveNewBookingWithWrongEndItemTest() {
-        BookingRequestDto bookingRequestDto = new BookingRequestDto();
-        itemFromService.setAvailable(false);
-        itemService.updateItem(userDtoSaved1.getId(), itemFromService.getId(), itemFromService);
-        bookingRequestDto.setItemId(itemFromService.getId());
-        bookingRequestDto.setStart(LocalDateTime.now().plusSeconds(4));
-        bookingRequestDto.setEnd(LocalDateTime.now().minusSeconds(8));
-
-        try {
-            service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The booking end time can't be in past"));
-        }
-    }
-
-    @Test
-    void saveNewBookingWithEndBeforeStartWrongEndItemTest() {
-        BookingRequestDto bookingRequestDto = new BookingRequestDto();
-        itemFromService.setAvailable(false);
-        itemService.updateItem(userDtoSaved1.getId(), itemFromService.getId(), itemFromService);
-        bookingRequestDto.setItemId(itemFromService.getId());
-        bookingRequestDto.setStart(LocalDateTime.now().plusSeconds(4));
-        bookingRequestDto.setEnd(LocalDateTime.now().plusSeconds(1));
-
-        try {
-            service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The booking end time must be after then start time"));
-        }
-    }
-
-    @Test
-    void saveNewBookingWithEndIsTheSameLikeStartWrongEndItemTest() {
-        BookingRequestDto bookingRequestDto = new BookingRequestDto();
-        itemFromService.setAvailable(false);
-        itemService.updateItem(userDtoSaved1.getId(), itemFromService.getId(), itemFromService);
-        bookingRequestDto.setItemId(itemFromService.getId());
-        LocalDateTime time = LocalDateTime.now().plusSeconds(3);
-        bookingRequestDto.setStart(time);
-        bookingRequestDto.setEnd(time);
-
-        try {
-            service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The booking start time and end time can't be the same"));
-        }
-    }
-
-    @Test
-    void saveNewBookingWithWrongItemIdTest() {
-        BookingRequestDto bookingRequestDto = new BookingRequestDto();
-        itemFromService.setAvailable(false);
-        itemService.updateItem(userDtoSaved1.getId(), itemFromService.getId(), itemFromService);
-        bookingRequestDto.setItemId(-2);
-        bookingRequestDto.setStart(LocalDateTime.now().plusSeconds(4));
-        bookingRequestDto.setEnd(LocalDateTime.now().plusSeconds(5));
-
-        try {
-            service.saveNewBooking(userDtoSaved2.getId(), bookingRequestDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The item id error"));
-        }
-    }
-
-    @Test
     void bookingApprovedConformationTest() {
         Booking booking = new Booking();
         booking.setItem(ItemMapper.makeItem(itemFromService));
@@ -293,7 +165,7 @@ public class BookingServiceImplIntegrationTest {
 
         try {
             service.bookingConfirmation(userDtoSaved1.getId(), bookingFromRepository.getId(), true);
-        } catch (ValidationException e) {
+        } catch (IllegalArgumentException e) {
             assertThat(e.getMessage(), equalTo("Approved error"));
         }
     }
@@ -487,38 +359,6 @@ public class BookingServiceImplIntegrationTest {
                 null, 1, 1);
 
         assertThat(bookingResponseDtos.size(), equalTo(1));
-    }
-
-    @Test
-    void getBookingsByBookerIdWithoutStateWithWrongPaginationParametersTest() {
-        Booking booking1 = new Booking();
-        booking1.setItem(ItemMapper.makeItem(itemFromService));
-        booking1.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking1.setStart(LocalDateTime.now().plusSeconds(100));
-        booking1.setEnd(LocalDateTime.now().plusSeconds(120));
-        booking1.setStatus(BookingStatus.WAITING);
-        repository.save(booking1);
-        Booking booking2 = new Booking();
-        booking2.setItem(ItemMapper.makeItem(itemFromService2));
-        booking2.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking2.setStart(LocalDateTime.now().plusSeconds(100));
-        booking2.setEnd(LocalDateTime.now().plusSeconds(120));
-        booking2.setStatus(BookingStatus.WAITING);
-        repository.save(booking2);
-
-        try {
-            service.getBookingsByBookerId(userDtoSaved2.getId(),
-                    null, -1, 1);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The from parameter can't be negative number"));
-        }
-
-        try {
-            service.getBookingsByBookerId(userDtoSaved2.getId(),
-                    null, 1, 0);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The size parameter must be positive number"));
-        }
     }
 
     @Test

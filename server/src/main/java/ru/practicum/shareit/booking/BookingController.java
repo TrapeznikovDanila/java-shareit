@@ -6,7 +6,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
-import ru.practicum.shareit.exception.ValidationException;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,12 +57,7 @@ public class BookingController {
                                                                     @RequestParam(required = false) Integer from,
                                                                     @RequestParam(required = false) Integer size) {
         fillMap();
-        if (bookingStates.containsKey(state)) {
-            return bookingService.getBookingsForAllItemsByOwnerId(userId, bookingStates.get(state), from, size);
-        } else {
-            log.error("Unknown state: " + state);
-            throw new ValidationException("Unknown state: " + state);
-        }
+        return bookingService.getBookingsForAllItemsByOwnerId(userId, bookingStates.get(state), from, size);
     }
 
     private Map<String, BookingState> fillMap() {

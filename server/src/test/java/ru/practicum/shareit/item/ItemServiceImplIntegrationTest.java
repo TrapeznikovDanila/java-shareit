@@ -9,7 +9,6 @@ import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.CommentsDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemForRequestDto;
@@ -69,57 +68,6 @@ public class ItemServiceImplIntegrationTest {
         assertThat(item.getName(), equalTo(itemDto.getName()));
         assertThat(item.getDescription(), equalTo(itemDto.getDescription()));
         assertThat(item.getAvailable(), equalTo(itemDto.getAvailable()));
-    }
-
-    @Test
-    void saveNewItemWithoutAvailableTest() {
-        UserDto userDtoNotSaved = new UserDto();
-        userDtoNotSaved.setName("Name");
-        userDtoNotSaved.setEmail("e@mail.ru");
-        UserDto userDtoSaved = userService.saveNewUser(userDtoNotSaved);
-        ItemDto itemDto = new ItemDto();
-        itemDto.setName("Name");
-        itemDto.setDescription("Description");
-
-        try {
-            service.saveNewItem(userDtoSaved.getId(), itemDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The availability field cannot be empty"));
-        }
-    }
-
-    @Test
-    void saveNewItemWithoutNameTest() {
-        UserDto userDtoNotSaved = new UserDto();
-        userDtoNotSaved.setName("Name");
-        userDtoNotSaved.setEmail("e@mail.ru");
-        UserDto userDtoSaved = userService.saveNewUser(userDtoNotSaved);
-        ItemDto itemDto = new ItemDto();
-        itemDto.setAvailable(true);
-        itemDto.setDescription("Description");
-
-        try {
-            service.saveNewItem(userDtoSaved.getId(), itemDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The name field cannot be empty"));
-        }
-    }
-
-    @Test
-    void saveNewItemWithoutDescriptionTest() {
-        UserDto userDtoNotSaved = new UserDto();
-        userDtoNotSaved.setName("Name");
-        userDtoNotSaved.setEmail("e@mail.ru");
-        UserDto userDtoSaved = userService.saveNewUser(userDtoNotSaved);
-        ItemDto itemDto = new ItemDto();
-        itemDto.setAvailable(true);
-        itemDto.setName("Name");
-
-        try {
-            service.saveNewItem(userDtoSaved.getId(), itemDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The description field cannot be empty"));
-        }
     }
 
     @Test
@@ -190,7 +138,7 @@ public class ItemServiceImplIntegrationTest {
         try {
             service.updateItem(15, itemDtoSaved.getId(), itemDto);
         } catch (NotFoundException e) {
-            assertThat(e.getMessage(), equalTo("This item not found"));
+            assertThat(e.getMessage(), equalTo(String.format("Item with id = %s not found", itemDtoSaved.getId())));
         }
     }
 
@@ -306,7 +254,7 @@ public class ItemServiceImplIntegrationTest {
         itemDto.setDescription("Description2");
         service.saveNewItem(userDtoSaved.getId(), itemDto);
 
-        List<ItemDto> itemDtos = service.getItemByUserId(userDtoSaved.getId(), null, null);
+        List<ItemDto> itemDtos = service.getItemByUserId(userDtoSaved.getId(), 0, 5);
 
         assertThat(itemDtos.size(), equalTo(2));
     }
@@ -383,34 +331,6 @@ public class ItemServiceImplIntegrationTest {
     }
 
     @Test
-    void getItemByUserIdWithWrongPaginationParametersTest() {
-        UserDto userDtoNotSaved = new UserDto();
-        userDtoNotSaved.setName("Name");
-        userDtoNotSaved.setEmail("e@mail.ru");
-        UserDto userDtoSaved = userService.saveNewUser(userDtoNotSaved);
-        ItemDto itemDto = new ItemDto();
-        itemDto.setName("Name");
-        itemDto.setDescription("Description");
-        itemDto.setAvailable(true);
-        service.saveNewItem(userDtoSaved.getId(), itemDto);
-        itemDto.setName("Name2");
-        itemDto.setDescription("Description2");
-        service.saveNewItem(userDtoSaved.getId(), itemDto);
-
-        try {
-            service.getItemByUserId(userDtoSaved.getId(), -1, 1);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The from parameter can't be negative number"));
-        }
-
-        try {
-            service.getItemByUserId(userDtoSaved.getId(), 0, 0);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The size parameter must be positive number"));
-        }
-    }
-
-    @Test
     void searchItem() {
         UserDto userDtoNotSaved = new UserDto();
         userDtoNotSaved.setName("Name");
@@ -425,7 +345,7 @@ public class ItemServiceImplIntegrationTest {
         itemDto.setDescription("Very good screwdriver");
         service.saveNewItem(userDtoSaved.getId(), itemDto);
 
-        List<ItemDto> itemDtos = service.search("screwdriver", null, null);
+        List<ItemDto> itemDtos = service.search("screwdriver", 0, 5);
 
         assertThat(itemDtos.size(), equalTo(1));
         assertThat(itemDtos.get(0).getDescription(), equalTo(itemDto.getDescription()));
@@ -447,7 +367,7 @@ public class ItemServiceImplIntegrationTest {
         service.saveNewItem(userDtoSaved.getId(), itemDto);
         service.saveNewItem(userDtoSaved.getId(), itemDto);
 
-        List<ItemDto> itemDtos1 = service.search("screwdriver", null, null);
+        List<ItemDto> itemDtos1 = service.search("screwdriver", 0, 5);
 
         assertThat(itemDtos1.size(), equalTo(2));
 
@@ -498,41 +418,6 @@ public class ItemServiceImplIntegrationTest {
     }
 
     @Test
-    void saveNewCommentWithoutTextTest() {
-        UserDto userDtoNotSaved1 = new UserDto();
-        userDtoNotSaved1.setName("Name");
-        userDtoNotSaved1.setEmail("e@mail.ru");
-        UserDto userDtoSaved1 = userService.saveNewUser(userDtoNotSaved1);
-
-        UserDto userDtoNotSaved2 = new UserDto();
-        userDtoNotSaved2.setName("Name2");
-        userDtoNotSaved2.setEmail("e2@mail.ru");
-        UserDto userDtoSaved2 = userService.saveNewUser(userDtoNotSaved2);
-
-        ItemDto itemDto = new ItemDto();
-        itemDto.setName("Name");
-        itemDto.setDescription("Description");
-        itemDto.setAvailable(true);
-        ItemDto itemFromService = service.saveNewItem(userDtoSaved1.getId(), itemDto);
-
-        Booking booking = new Booking();
-        booking.setItem(ItemMapper.makeItem(itemFromService));
-        booking.setBooker(UserMapper.makeUser(userDtoSaved2));
-        booking.setStart(LocalDateTime.of(2022, 11, 20, 9, 0));
-        booking.setEnd(LocalDateTime.of(2022, 11, 20, 10, 0));
-        booking.setStatus(BookingStatus.APPROVED);
-        bookingRepository.save(booking);
-
-        CommentsDto commentsDto = new CommentsDto();
-
-        try {
-            service.saveNewComment(userDtoSaved2.getId(), itemFromService.getId(), commentsDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("Comment text is empty"));
-        }
-    }
-
-    @Test
     void saveNewCommentWithoutBookingTest() {
         UserDto userDtoNotSaved1 = new UserDto();
         userDtoNotSaved1.setName("Name");
@@ -555,7 +440,7 @@ public class ItemServiceImplIntegrationTest {
 
         try {
             service.saveNewComment(userDtoSaved2.getId(), itemFromService.getId(), commentsDto);
-        } catch (ValidationException e) {
+        } catch (IllegalArgumentException e) {
             assertThat(e.getMessage(), equalTo("If you didn't rent this Item you can't leave the comment"));
         }
     }

@@ -10,7 +10,6 @@ import ru.practicum.shareit.booking.BookingMapper;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.CommentsDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.ItemForRequestDto;
@@ -40,7 +39,6 @@ public class ItemServiceImpl implements ItemService {
         checkUserId(userId);
         Item item = ItemMapper.makeItem(itemDto);
         item.setUserId(userId);
-        validation(item);
         return ItemMapper.makeItemDto(itemRepository.save(item));
     }
 
@@ -105,18 +103,26 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> getItemByUserId(long userId, Integer from, Integer size) {
         checkUserId(userId);
-        if (from == null) {
-            from = 0;
-        }
-        if (size == null) {
-            size = 10;
-        }
-        pageParametersValidation(from, size);
         Page<Item> items = itemRepository.findItemByUserIdOrderById(userId, PageRequest.of((from / size), size));
         List<Comments> allComments = commentRepository.findAll();
         List<ItemDto> itemsForOwnerDto = new ArrayList<>();
+        List<Booking> bookings = bookingRepository.findAll().stream()
+                .filter(b -> b.getStatus().equals(BookingStatus.APPROVED))
+                .collect(Collectors.toList());
         for (Item item : items) {
-            ItemDto itemDto = setLastAndNextBooking(ItemMapper.makeItemDto(item), item.getId());
+            List<Booking> lastBookings = bookings.stream().filter(b -> b.getItem().getId() == item.getId())
+                    .filter(b -> b.getEnd().isBefore(LocalDateTime.now())).sorted(Comparator.comparing(Booking::getEnd))
+                    .collect(Collectors.toList());
+            if (lastBookings.size() > 0) {
+                item.setLastBooking(BookingMapper.makeBookingForItemDto(lastBookings.get(lastBookings.size() - 1)));
+            }
+            List<Booking> nextBookings = bookings.stream().filter(b -> b.getItem().getId() == item.getId())
+                    .filter(b -> b.getStart().isAfter(LocalDateTime.now())).sorted(Comparator.comparing(Booking::getStart))
+                    .collect(Collectors.toList());
+            if (nextBookings.size() > 0) {
+                item.setNextBooking(BookingMapper.makeBookingForItemDto(nextBookings.get(nextBookings.size() - 1)));
+            }
+            ItemDto itemDto = ItemMapper.makeItemDto(item);
             List<CommentsDto> comments = new ArrayList<>();
             for (Comments comment : allComments) {
                 if (comment.getItemId() == item.getId()) {
@@ -134,13 +140,6 @@ public class ItemServiceImpl implements ItemService {
         if ((text == null) || text.isBlank()) {
             return Collections.emptyList();
         }
-        if (from == null) {
-            from = 0;
-        }
-        if (size == null) {
-            size = 10;
-        }
-        pageParametersValidation(from, size);
         Set<Item> items = Stream.concat(itemRepository
                                 .findByNameContainingIgnoreCase(text)
                                 .stream(),
@@ -149,7 +148,7 @@ public class ItemServiceImpl implements ItemService {
                                 .stream())
                 .skip(from)
                 .limit(size)
-                .filter(item -> item.getAvailable() == true)
+                .filter(item -> item.getAvailable())
                 .collect(Collectors.toSet());
 
         return items.stream().map(ItemMapper::makeItemDto)
@@ -157,28 +156,13 @@ public class ItemServiceImpl implements ItemService {
                 .collect(Collectors.toList());
     }
 
-    private void validation(Item item) {
-        if (item.getAvailable() == null) {
-            log.error("The availability field cannot be empty");
-            throw new ValidationException("The availability field cannot be empty");
-        }
-        if (item.getName() == null || item.getName().isBlank()) {
-            log.error("The name field cannot be empty");
-            throw new ValidationException("The name field cannot be empty");
-        }
-        if (item.getDescription() == null || item.getDescription().isBlank()) {
-            log.error("The description field cannot be empty");
-            throw new ValidationException("The description field cannot be empty");
-        }
-    }
-
     @Override
     public void checkOwner(long userId, long itemId) {
         Optional<Item> item = itemRepository.findById(itemId);
         if (item.isPresent()) {
             if (item.get().getUserId() != userId) {
-                log.error("This item not found");
-                throw new NotFoundException("This item not found");
+                log.error(String.format("Item with id = %s not found", itemId));
+                throw new NotFoundException(String.format("Item with id = %s not found", itemId));
             }
         } else {
             throw new NotFoundException("Unknown item id");
@@ -188,8 +172,8 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public void checkUserId(long userId) {
         if (!userRepository.existsById(userId)) {
-            log.error("User not found");
-            throw new NotFoundException("User not found");
+            log.error(String.format("User with id = %s not found", userId));
+            throw new NotFoundException(String.format("User with id = %s not found", userId));
         }
     }
 
@@ -212,7 +196,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public CommentsDto saveNewComment(long userId, long itemId, CommentsDto commentDto) {
         checkUserId(userId);
-        commentsValidation(commentDto);
         List<Booking> bookingsByUserId = bookingRepository.findBookingsByBookerId(userId)
                 .stream()
                 .filter(b -> b.getItem().getId() == itemId)
@@ -227,7 +210,7 @@ public class ItemServiceImpl implements ItemService {
             comment.setUserId(userId);
             return CommentsMapper.makeCommentDto(commentRepository.save(comment));
         } else {
-            throw new ValidationException("If you didn't rent this Item you can't leave the comment");
+            throw new IllegalArgumentException("If you didn't rent this Item you can't leave the comment");
         }
     }
 
@@ -239,24 +222,10 @@ public class ItemServiceImpl implements ItemService {
                 .collect(Collectors.toList());
     }
 
-    private void commentsValidation(CommentsDto commentDto) {
-        if ((commentDto.getText() == null) || commentDto.getText().isBlank()) {
-            throw new ValidationException("Comment text is empty");
-        }
-    }
-
     private List<CommentsDto> getComments(long itemId) {
         return commentRepository.findCommentsByItemId(itemId)
                 .stream()
                 .map(CommentsMapper::makeCommentDto)
                 .collect(Collectors.toList());
-    }
-
-    private void pageParametersValidation(int from, int size) {
-        if (from < 0) {
-            throw new ValidationException("The from parameter can't be negative number");
-        } else if (size <= 0) {
-            throw new ValidationException("The size parameter must be positive number");
-        }
     }
 }

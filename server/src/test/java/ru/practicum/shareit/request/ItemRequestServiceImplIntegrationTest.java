@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.user.User;
@@ -56,22 +55,6 @@ public class ItemRequestServiceImplIntegrationTest {
     }
 
     @Test
-    void saveNewItemRequestWithoutDescriptionTest() {
-        User user = new User();
-        user.setName("Name");
-        user.setEmail("e@mail.ru");
-        User savedUser = userRepository.save(user);
-
-        ItemRequestDto itemRequestDto = new ItemRequestDto();
-
-        try {
-            service.saveNewItemRequest(savedUser.getId(), itemRequestDto);
-        } catch (ValidationException e) {
-            assertThat(e.getMessage(), equalTo("The description field cannot be empty"));
-        }
-    }
-
-    @Test
     void saveNewItemRequestWithWrongUserIdGetValidationExceptionTest() {
         ItemRequestDto itemRequestDto = new ItemRequestDto();
         itemRequestDto.setDescription("description");
@@ -79,7 +62,7 @@ public class ItemRequestServiceImplIntegrationTest {
         try {
             service.saveNewItemRequest(100, itemRequestDto);
         } catch (NotFoundException e) {
-            assertThat(e.getMessage(), equalTo("User not found"));
+            assertThat(e.getMessage(), equalTo(String.format("User with id = %s not found", 100)));
         }
     }
 

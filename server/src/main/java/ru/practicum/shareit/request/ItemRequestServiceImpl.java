@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.item.dto.ItemForRequestDto;
@@ -32,7 +31,6 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     @Override
     public ItemRequestDto saveNewItemRequest(long userId, ItemRequestDto itemRequestDto) {
         checkUserId(userId);
-        validation(itemRequestDto);
         ItemRequest itemRequest = ItemRequestMapper.makeItemRequest(itemRequestDto);
         itemRequest.setCreated(LocalDateTime.now());
         itemRequest.setUserId(userId);
@@ -42,13 +40,6 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     @Override
     public List<ItemRequestDto> getItemRequestByAuthor(long userId, Integer from, Integer size) {
         checkUserId(userId);
-        if (from == null) {
-            from = 0;
-        }
-        if (size == null) {
-            size = 10;
-        }
-        pageParametersValidation(from, size);
         List<ItemRequestDto> itemsRequests = itemRequestsRepository.getItemRequestByUserIdOrderByCreated(userId,
                         PageRequest.of(from / size, size))
                 .stream()
@@ -70,7 +61,6 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     @Override
     public List<ItemRequestDto> getItemRequests(long userId, int from, int size) {
         checkUserId(userId);
-        pageParametersValidation(from, size);
         List<ItemRequestDto> itemsRequests = itemRequestsRepository.findAllNotForUserId(userId,
                         PageRequest.of(from / size, size))
                 .stream()
@@ -117,23 +107,8 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     private void checkUserId(long userId) {
         if (!userRepository.existsById(userId)) {
-            log.error("User not found");
-            throw new NotFoundException("User not found");
-        }
-    }
-
-    private void validation(ItemRequestDto itemRequestDto) {
-        if (itemRequestDto.getDescription() == null) {
-            log.error("The description field cannot be empty");
-            throw new ValidationException("The description field cannot be empty");
-        }
-    }
-
-    private void pageParametersValidation(int from, int size) {
-        if (from < 0) {
-            throw new ValidationException("The from parameter can't be negative number");
-        } else if (size <= 0) {
-            throw new ValidationException("The size parameter must be positive number");
+            log.error(String.format("User with id = %s not found", userId));
+            throw new NotFoundException(String.format("User with id = %s not found", userId));
         }
     }
 }

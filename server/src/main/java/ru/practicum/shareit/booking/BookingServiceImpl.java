@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.ItemService;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.UserMapper;
@@ -33,13 +32,12 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingResponseDto saveNewBooking(long bookerId, BookingRequestDto bookingRequestDto) {
         itemService.checkUserId(bookerId);
-        validation(bookingRequestDto);
         Item item = itemService.getItemById(bookingRequestDto.getItemId());
         if (item.getUserId() == bookerId) {
             throw new NotFoundException("This item already belongs to you, " +
                     "so you can't rent it");
         }
-        if (item.getAvailable() == true) {
+        if (item.getAvailable()) {
             bookingRequestDto.setBookerId(bookerId);
             bookingRequestDto.setStatus(BookingStatus.WAITING);
             Booking booking = bookingRepository.save(BookingMapper.makeBooking(bookingRequestDto));
@@ -48,7 +46,7 @@ public class BookingServiceImpl implements BookingService {
             return BookingMapper.makeBookingResponseDto(booking);
         } else {
             log.error("This item isn't available");
-            throw new ValidationException("This item isn't available");
+            throw new IllegalArgumentException("This item isn't available");
         }
 
     }
@@ -61,7 +59,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setBooker(UserMapper.makeUser(userService.getUserById(booking.getBooker().getId())));
         itemService.checkOwner(ownerId, booking.getItem().getId());
         if (approved && booking.getStatus().equals(BookingStatus.APPROVED)) {
-            throw new ValidationException("Approved error");
+            throw new IllegalArgumentException("Approved error");
         }
         if (approved) {
             booking.setStatus(BookingStatus.APPROVED);
@@ -86,13 +84,6 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public List<BookingResponseDto> getBookingsByBookerId(long bookerId, String state, Integer from, Integer size) {
         itemService.checkUserId(bookerId);
-        if (from == null) {
-            from = 0;
-        }
-        if (size == null) {
-            size = 10;
-        }
-        pageParametersValidation(from, size);
         int page = calculatePage(from, size);
         if (getBookingState(state).equals(BookingState.CURRENT)) {
             return getCurrentBookingsByBookerId(bookerId, page, size);
@@ -113,13 +104,6 @@ public class BookingServiceImpl implements BookingService {
     public List<BookingResponseDto> getBookingsForAllItemsByOwnerId(long userId, BookingState state, Integer from,
                                                                     Integer size) {
         itemService.checkUserId(userId);
-        if (from == null) {
-            from = 0;
-        }
-        if (size == null) {
-            size = 10;
-        }
-        pageParametersValidation(from, size);
         int page = calculatePage(from, size);
         if (state == null) {
             state = BookingState.ALL;
@@ -246,45 +230,6 @@ public class BookingServiceImpl implements BookingService {
                 .collect(Collectors.toList());
     }
 
-    private void validation(BookingRequestDto booking) {
-        if (booking.getStart() == null) {
-            log.error("The booking start time field cannot be empty");
-            throw new ValidationException("The booking start time field cannot be empty");
-        }
-        if (booking.getEnd() == null) {
-            log.error("The booking end time field cannot be empty");
-            throw new ValidationException("The booking end time field cannot be empty");
-        }
-        if (booking.getStart().isBefore(LocalDateTime.now())) {
-            log.error("The booking start time can't be in past");
-            throw new ValidationException("The booking start time can't be in past");
-        }
-        if (booking.getEnd().isBefore(LocalDateTime.now())) {
-            log.error("The booking end time can't be in past");
-            throw new ValidationException("The booking end time can't be in past");
-        }
-        if (booking.getEnd().isBefore(booking.getStart())) {
-            log.error("The booking end time must be after then start time");
-            throw new ValidationException("The booking end time must be after then start time");
-        }
-        if (booking.getStart().isEqual(booking.getEnd())) {
-            log.error("The booking start time and end time can't be the same");
-            throw new ValidationException("The booking start time and end time can't be the same");
-        }
-        if (booking.getItemId() <= 0) {
-            log.error("The item id error");
-            throw new ValidationException("The item id error");
-        }
-    }
-
-    private void pageParametersValidation(int from, int size) {
-        if (from < 0) {
-            throw new ValidationException("The from parameter can't be negative number");
-        } else if (size <= 0) {
-            throw new ValidationException("The size parameter must be positive number");
-        }
-    }
-
     private int calculatePage(int from, int size) {
         return from / size;
     }
@@ -304,7 +249,7 @@ public class BookingServiceImpl implements BookingService {
             return BookingState.REJECTED;
         } else {
             log.error("Unknown state: " + state);
-            throw new ValidationException("Unknown state: " + state);
+            throw new IllegalArgumentException("Unknown state: " + state);
         }
     }
 }

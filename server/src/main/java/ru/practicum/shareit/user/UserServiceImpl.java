@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.util.List;
@@ -37,7 +36,6 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDto saveNewUser(UserDto userDto) {
         User user = UserMapper.makeUser(userDto);
-        validation(user);
         return UserMapper
                 .makeUserDto(userRepository.save(user));
     }
@@ -59,14 +57,5 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(Long userId) {
         userRepository.deleteById(userId);
-    }
-
-    private void validation(User user) {
-        if (user.getEmail() == null
-                || user.getEmail().isBlank()
-                || !user.getEmail().contains("@")) {
-            log.error("Email error");
-            throw new ValidationException("Email error");
-        }
     }
 }
